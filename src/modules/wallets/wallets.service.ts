@@ -7,7 +7,6 @@ import { Wallet } from './entities/wallet.entity';
 import Web3 from 'web3';
 import { lastValueFrom } from 'rxjs';
 import { CreateWalletDto } from './dto/create-wallet.dto';
-import { Transaction } from 'src/shared/interfaces/transaction';
 
 @Injectable()
 export class WalletsService {
@@ -24,77 +23,58 @@ export class WalletsService {
       'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
 
     const repository = this.walletRepository;
-    const wallets = await this.findAll();
-
-    const adresses = new Set<string>();
-
-    wallets.forEach((wallet) => adresses.add(wallet.address));
-
+    const listExistAddresses = await repository.find();
+    const addresses = new Set<string>();
+    listExistAddresses.forEach((existedAddress) =>
+      addresses.add(existedAddress.address),
+    );
     const web3 = new Web3(ENDPOINT);
-
-    const newBlockHeaders = web3.eth.subscribe(
-      'newBlockHeaders',
-      function (error, result) {
+    web3.eth
+      .subscribe('newBlockHeaders', function (error, result) {
         if (!error) {
           console.log('subscription: ', result);
           return;
         }
         console.error(error);
-      },
-    );
-
-    const subscription = newBlockHeaders.on(
-      'connected',
-      function (subscriptionId) {
+      })
+      .on('connected', function (subscriptionId) {
         console.log('subscriptionId: ', subscriptionId);
-      },
-    );
+      })
+      .on('data', async (blockHeader) => {
+        const headers = { 'Content-Type': 'application/json' };
+        const data = {
+          jsonrpc: '2.0',
+          method: 'eth_getBlockByHash',
+          params: [blockHeader.hash, false],
+          id: 1,
+        };
+        const res = this.httpService
+          .post(REST_ENDPIONT, data, { headers })
+          .pipe();
 
-    const data = subscription.on('data', async (blockHeader) => {
-      const headers = { 'Content-Type': 'application/json' };
-      const dataBody = {
-        jsonrpc: '2.0',
-        method: 'eth_getBlockByHash',
-        params: [blockHeader.hash, false],
-        id: 1,
-      };
-      const res = this.httpService
-        .post(REST_ENDPIONT, dataBody, { headers })
-        .pipe();
+        const { data: wallets } = await lastValueFrom(res);
 
-      const { data: wallets } = await lastValueFrom(res);
+        wallets.result.transactions.forEach((tr) => {
+          web3.eth.getTransaction(tr, async function (err, result) {
+            const fromAddress = result.from;
+            const toAddress = result.to;
 
-      wallets.result.transactions.forEach((tr: string) => {
-        web3.eth.getTransaction(tr, async function (err, result: Transaction) {
-          const fromAddress = result.from;
-          const toAddress = result.to;
-
-          if (fromAddress) {
-            if (!adresses.has(fromAddress)) {
-              console.log('fromAddress -->', fromAddress);
-              adresses.add(fromAddress);
-              await repository.save({
-                address: fromAddress,
-              });
+            if (fromAddress) {
+              if (!addresses.has(fromAddress)) {
+                addresses.add(fromAddress);
+                await repository.save({ address: fromAddress });
+              }
             }
-          }
-
-          if (toAddress) {
-            if (!adresses.has(toAddress)) {
-              console.log('toAddress -->', toAddress);
-              adresses.add(toAddress);
-              await repository.save({
-                address: toAddress,
-                type: result.type,
-              });
+            if (toAddress) {
+              if (!addresses.has(toAddress)) {
+                addresses.add(toAddress);
+                await repository.save({ address: toAddress });
+              }
             }
-          }
+          });
         });
-      });
-    });
-
-    data.on('changed', (changed) => console.log(changed));
-    data.on('error', console.error);
+      })
+      .on('error', console.error);
 
     return 'res_wallets';
   }
@@ -104,7 +84,11 @@ export class WalletsService {
   }
 
   findAll() {
-    return this.walletRepository.find();
+    return this.walletRepository.find({
+      select: {
+        address: true,
+      },
+    });
   }
 
   update(address: string, updateWalletDto: UpdateWalletDto) {

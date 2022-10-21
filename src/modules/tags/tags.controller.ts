@@ -20,11 +20,6 @@ export class TagsController {
     return this.tagsService.saveTags();
   }
 
-  @Post('save-from-wallet')
-  saveTagFromAdress(@Body('address') address: string) {
-    return this.tagsService.saveTagFromAddres(address);
-  }
-
   @Post('create-new-tag')
   create(@Body() createTagDto: CreateTagDto) {
     return this.tagsService.create(createTagDto);

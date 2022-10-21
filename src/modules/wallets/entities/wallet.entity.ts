@@ -6,7 +6,7 @@ export class Wallet {
   address: string;
 
   @Column({ nullable: true })
-  type: number;
+  type: string;
 
   @Column({ nullable: true, type: 'bigint' })
   lastUpdate: number;

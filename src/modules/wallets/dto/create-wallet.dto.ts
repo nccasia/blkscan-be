@@ -3,9 +3,9 @@ import { IsNumber, IsOptional, IsString } from 'class-validator';
 export class CreateWalletDto {
   @IsString()
   address: string;
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  type: number;
+  type: string;
   @IsNumber()
   @IsOptional()
   lastUpdate: number;
