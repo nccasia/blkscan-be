@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, BaseEntity } from 'typeorm';
+import { Wallet } from 'src/modules/wallets/entities/wallet.entity';
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  BaseEntity,
+  ManyToOne,
+} from 'typeorm';
 @Entity('tags')
 export class Tag extends BaseEntity {
   @PrimaryGeneratedColumn()
@@ -8,5 +15,8 @@ export class Tag extends BaseEntity {
   tag: string;
 
   @Column({ nullable: true })
-  wallet: string;
+  walletAddress: string;
+
+  @ManyToOne(() => Wallet, (wallet) => wallet.tags)
+  wallet: Wallet;
 }

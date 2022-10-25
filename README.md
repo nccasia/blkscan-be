@@ -33,6 +33,7 @@ $ npm install
 ```
 
 ## Running the app
+Append env variable in src/common/envs/development.env then run these scripts
 
 ```bash
 # development
