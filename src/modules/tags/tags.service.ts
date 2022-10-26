@@ -58,14 +58,6 @@ export class TagsService {
     return 'results';
   }
 
-  async saveTagsAndWallet(address: string, date: Date) {
-    const tags = await this.saveTagsFromAddres(address);
-    tags.length &&
-      (await this.walletService.update(address, {
-        lastUpdate: date.getTime(),
-      }));
-  }
-
   async saveTagsFromAddres(address: string) {
     const url = this.configService.get<string>('URL_PREFIX') + address;
     try {
@@ -97,6 +89,14 @@ export class TagsService {
       console.log('saveTagFromAddres', url);
       throw error;
     }
+  }
+
+  async saveTagsAndWallet(address: string, date: Date) {
+    const tags = await this.saveTagsFromAddres(address);
+    tags.length &&
+      (await this.walletService.update(address, {
+        lastUpdate: date.getTime(),
+      }));
   }
 
   getDataFromAddress(URL: string): Observable<string[]> {
