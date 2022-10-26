@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   BaseEntity,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 @Entity('tags')
 export class Tag extends BaseEntity {
@@ -18,5 +19,6 @@ export class Tag extends BaseEntity {
   walletAddress: string;
 
   @ManyToOne(() => Wallet, (wallet) => wallet.tags)
+  @JoinColumn({ referencedColumnName: 'address' })
   wallet: Wallet;
 }
