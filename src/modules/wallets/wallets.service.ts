@@ -124,7 +124,7 @@ export class WalletsService {
   }
 
   create(createWalletDto: CreateWalletDto) {
-    return this.walletRepository.save(createWalletDto);
+    return this.walletRepository.insert(createWalletDto);
   }
 
   findAll() {
