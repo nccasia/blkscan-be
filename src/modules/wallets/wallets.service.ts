@@ -8,6 +8,7 @@ import Web3 from 'web3';
 import { lastValueFrom } from 'rxjs';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { Transaction } from 'src/shared/interfaces/transaction';
+import { Neo4jService } from '@nhogs/nestjs-neo4j';
 
 @Injectable()
 export class WalletsService {
@@ -15,7 +16,30 @@ export class WalletsService {
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
     private readonly httpService: HttpService,
+    // @Inject(Neo4jService )
+    private readonly neo4jService: Neo4jService,
   ) {}
+  async testWriteNeo4j() {
+    const newCat = { name: 'cat' };
+    const queryResult = await this.neo4jService.run(
+      {
+        cypher: 'CREATE (c:`Cat`) SET c=$props RETURN properties(c) AS cat',
+        parameters: {
+          props: newCat,
+        },
+      },
+      { write: true },
+    );
+
+    return queryResult.records[0].toObject().cat;
+  }
+
+  async testReadNeo4j() {
+    const queryResult = await this.neo4jService.run({
+      cypher: 'MATCH (n) RETURN count(n) AS count',
+    });
+    return queryResult.records[0].get('count') + ' records';
+  }
 
   async crawlWallet() {
     const REST_ENDPIONT =
