@@ -21,8 +21,8 @@ export class TagsController {
   }
 
   @Post('save-from-wallet')
-  saveTagFromAdress(@Body('address') address: string) {
-    return this.tagsService.saveTagFromAddres(address);
+  saveTagsFromAddres(@Body('address') address: string) {
+    return this.tagsService.saveTagsFromAddres(address);
   }
 
   @Post('create-new-tag')

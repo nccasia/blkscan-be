@@ -7,5 +7,5 @@ export class CreateTagDto {
 
   @IsNotEmpty()
   @IsString()
-  wallet: string;
+  walletAddress: string;
 }
