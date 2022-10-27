@@ -21,19 +21,21 @@ export class WalletsService {
     @Inject(AddressService)
     private readonly addressService: AddressService,
   ) {}
-  async testWriteNeo4j() {
-    const newCat = { name: 'cat' };
-    const queryResult = await this.neo4jService.run(
-      {
-        cypher: 'CREATE (c:`Cat`) SET c=$props RETURN properties(c) AS cat',
-        parameters: {
-          props: newCat,
-        },
-      },
-      { write: true },
-    );
 
-    return queryResult.records[0].toObject().cat;
+  async testWriteNeo4j() {
+    const array = [
+      { from: 'a', to: 'b', send: 100 },
+      { from: 'a', to: 'c', send: 200 },
+      { from: 'b', to: 'd', send: 300 },
+    ];
+    array.forEach(async (o) => {
+      await this.addressService.createWithSendRelationship(
+        { address: o.from },
+        { address: o.to },
+        { volume: o.send },
+      );
+    });
+    return true;
   }
 
   async testReadNeo4j() {
@@ -89,16 +91,16 @@ export class WalletsService {
         .pipe();
 
       const { data: wallets } = await lastValueFrom(res);
-      const addressService = this.addressService;
 
       wallets.result.transactions.forEach((tr: string) => {
-        web3.eth.getTransaction(tr, async function (err, result: Transaction) {
+        web3.eth.getTransaction(tr, async (err, result: Transaction) => {
           const fromAddress = result.from || 'from';
           const toAddress = result.to || 'to';
-          await addressService.createWithSendRelationship({
-            addressSender: { address: fromAddress },
-            addressReceiver: { address: toAddress },
-          });
+          await this.addressService.createWithSendRelationship(
+            { address: fromAddress },
+            { address: toAddress },
+            { volume: 0 },
+          );
           // if (fromAddress) {
           //   if (!adresses.has(fromAddress)) {
           //     console.log('fromAddress -->', fromAddress);
