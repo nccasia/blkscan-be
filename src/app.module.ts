@@ -9,6 +9,8 @@ import { configEnvPath } from './common/helper/env.helper';
 import { TypeOrmConfigSerivce } from './shared/typeorm/typeorm.service';
 import { Neo4jModule } from '@nhogs/nestjs-neo4j';
 import { Neo4jConfig } from '@nhogs/nestjs-neo4j/dist';
+import { SendModule } from './modules/send/send.module';
+import { AddressModule } from './modules/address/address.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { Neo4jConfig } from '@nhogs/nestjs-neo4j/dist';
       }),
       global: true,
     }),
+    SendModule,
+    AddressModule,
   ],
   controllers: [AppController],
   providers: [AppService],

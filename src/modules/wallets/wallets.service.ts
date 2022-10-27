@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { lastValueFrom } from 'rxjs';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { Transaction } from 'src/shared/interfaces/transaction';
 import { Neo4jService } from '@nhogs/nestjs-neo4j';
+import { AddressService } from '../address/address.service';
 
 @Injectable()
 export class WalletsService {
@@ -16,8 +17,9 @@ export class WalletsService {
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
     private readonly httpService: HttpService,
-    // @Inject(Neo4jService )
     private readonly neo4jService: Neo4jService,
+    @Inject(AddressService)
+    private readonly addressService: AddressService,
   ) {}
   async testWriteNeo4j() {
     const newCat = { name: 'cat' };
@@ -87,32 +89,36 @@ export class WalletsService {
         .pipe();
 
       const { data: wallets } = await lastValueFrom(res);
+      const addressService = this.addressService;
 
       wallets.result.transactions.forEach((tr: string) => {
         web3.eth.getTransaction(tr, async function (err, result: Transaction) {
-          const fromAddress = result.from;
-          const toAddress = result.to;
+          const fromAddress = result.from || 'from';
+          const toAddress = result.to || 'to';
+          await addressService.createWithSendRelationship({
+            addressSender: { address: fromAddress },
+            addressReceiver: { address: toAddress },
+          });
+          // if (fromAddress) {
+          //   if (!adresses.has(fromAddress)) {
+          //     console.log('fromAddress -->', fromAddress);
+          //     adresses.add(fromAddress);
+          //     // await repository.save({
+          //     //   address: fromAddress,
+          //     // });
+          //   }
+          // }
 
-          if (fromAddress) {
-            if (!adresses.has(fromAddress)) {
-              console.log('fromAddress -->', fromAddress);
-              adresses.add(fromAddress);
-              await repository.save({
-                address: fromAddress,
-              });
-            }
-          }
-
-          if (toAddress) {
-            if (!adresses.has(toAddress)) {
-              console.log('toAddress -->', toAddress);
-              adresses.add(toAddress);
-              await repository.save({
-                address: toAddress,
-                type: result.type,
-              });
-            }
-          }
+          // if (toAddress) {
+          //   if (!adresses.has(toAddress)) {
+          //     console.log('toAddress -->', toAddress);
+          //     adresses.add(toAddress);
+          //     // await repository.save({
+          //     //   address: toAddress,
+          //     //   type: result.type,
+          //     // });
+          //   }
+          // }
         });
       });
     });
