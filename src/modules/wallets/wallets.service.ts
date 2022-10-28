@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { UpdateWalletDto } from './dto/update-wallet.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { lastValueFrom } from 'rxjs';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { Transaction } from 'src/shared/interfaces/transaction';
 import { Neo4jService } from '@nhogs/nestjs-neo4j';
+import { AddressService } from '../address/address.service';
 
 @Injectable()
 export class WalletsService {
@@ -16,22 +17,25 @@ export class WalletsService {
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
     private readonly httpService: HttpService,
-    // @Inject(Neo4jService )
     private readonly neo4jService: Neo4jService,
+    @Inject(AddressService)
+    private readonly addressService: AddressService,
   ) {}
-  async testWriteNeo4j() {
-    const newCat = { name: 'cat' };
-    const queryResult = await this.neo4jService.run(
-      {
-        cypher: 'CREATE (c:`Cat`) SET c=$props RETURN properties(c) AS cat',
-        parameters: {
-          props: newCat,
-        },
-      },
-      { write: true },
-    );
 
-    return queryResult.records[0].toObject().cat;
+  async testWriteNeo4j() {
+    const array = [
+      { from: 'a', to: 'b', send: 100 },
+      { from: 'a', to: 'c', send: 200 },
+      { from: 'b', to: 'd', send: 300 },
+    ];
+    array.forEach(async (o) => {
+      await this.addressService.createWithSendRelationship(
+        { address: o.from },
+        { address: o.to },
+        { volume: o.send },
+      );
+    });
+    return true;
   }
 
   async testReadNeo4j() {
@@ -89,30 +93,34 @@ export class WalletsService {
       const { data: wallets } = await lastValueFrom(res);
 
       wallets.result.transactions.forEach((tr: string) => {
-        web3.eth.getTransaction(tr, async function (err, result: Transaction) {
-          const fromAddress = result.from;
-          const toAddress = result.to;
+        web3.eth.getTransaction(tr, async (err, result: Transaction) => {
+          const fromAddress = result.from || 'from';
+          const toAddress = result.to || 'to';
+          await this.addressService.createWithSendRelationship(
+            { address: fromAddress },
+            { address: toAddress },
+            { volume: 0 },
+          );
+          // if (fromAddress) {
+          //   if (!adresses.has(fromAddress)) {
+          //     console.log('fromAddress -->', fromAddress);
+          //     adresses.add(fromAddress);
+          //     // await repository.save({
+          //     //   address: fromAddress,
+          //     // });
+          //   }
+          // }
 
-          if (fromAddress) {
-            if (!adresses.has(fromAddress)) {
-              console.log('fromAddress -->', fromAddress);
-              adresses.add(fromAddress);
-              await repository.save({
-                address: fromAddress,
-              });
-            }
-          }
-
-          if (toAddress) {
-            if (!adresses.has(toAddress)) {
-              console.log('toAddress -->', toAddress);
-              adresses.add(toAddress);
-              await repository.save({
-                address: toAddress,
-                type: result.type,
-              });
-            }
-          }
+          // if (toAddress) {
+          //   if (!adresses.has(toAddress)) {
+          //     console.log('toAddress -->', toAddress);
+          //     adresses.add(toAddress);
+          //     // await repository.save({
+          //     //   address: toAddress,
+          //     //   type: result.type,
+          //     // });
+          //   }
+          // }
         });
       });
     });
