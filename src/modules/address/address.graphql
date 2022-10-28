@@ -1,0 +1,18 @@
+type Address {
+  address: ID!
+  desc: String
+}
+
+input CreateAddressInput {
+  address: String
+  desc: String
+}
+
+type Query {
+  getAddresses: [Address]
+  getAddress(address: ID!): Address
+}
+
+type Mutation {
+  createAddress(createAddressInput: CreateAddressInput): Address
+}

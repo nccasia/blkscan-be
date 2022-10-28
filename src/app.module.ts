@@ -11,6 +11,11 @@ import { Neo4jModule } from '@nhogs/nestjs-neo4j';
 import { Neo4jConfig } from '@nhogs/nestjs-neo4j/dist';
 import { SendModule } from './modules/send/send.module';
 import { AddressModule } from './modules/address/address.module';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriverConfig } from '@nestjs/apollo';
+import { ApolloDriver } from '@nestjs/apollo/dist/drivers';
+import { upperDirectiveTransformer } from './common/directives/upper-case.directive';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -30,6 +35,20 @@ import { AddressModule } from './modules/address/address.module';
         database: configService.get('NEO4J_DATABASE'),
       }),
       global: true,
+    }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      typePaths: ['./**/*.graphql'],
+      transformSchema: (schema) => upperDirectiveTransformer(schema, 'upper'),
+      debug: false,
+      playground: true,
+      // plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      definitions: {
+        path: join(process.cwd(), 'src/gen/graphql.schema.ts'),
+        emitTypenameField: true,
+        // outputAs: 'class',
+      },
+      // include: [AddressModule],
     }),
     SendModule,
     AddressModule,
