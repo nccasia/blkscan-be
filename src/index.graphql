@@ -2,8 +2,9 @@ interface Send @relationshipProperties {
   volumne: Int
 }
 
-type Address {
-  address: ID!
+type Address @node {
+  address: ID! @unique
+  total: Int
   desc: String
   # addressSenders: [Address!]! @relationship(type: "SEND", direction: OUT)
   addressSenders: [Address!]!
@@ -14,6 +15,7 @@ type Address {
 
 input CreateAddressInput {
   address: String
+  total: Int
   desc: String
 }
 

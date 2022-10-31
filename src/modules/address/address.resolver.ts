@@ -1,9 +1,8 @@
 import { AddressService } from './address.service';
 import { ParseIntPipe } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
-// import { Address } from '../../gen/graphql.schema';
+import { Address } from '../../gen/graphql.schema';
 import { AddressDto } from './dto/address.dto';
-type Address = any
 @Resolver('Address')
 export class AddressResolver {
   constructor(private readonly addresssService: AddressService) {}

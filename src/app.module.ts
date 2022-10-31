@@ -78,17 +78,6 @@ import neo4j from 'neo4j-driver';
         // process.exit(1);
         await ogm.init();
 
-        // const resolvers = {
-        //   Query: {
-        //     yourCustomerResolverName: async (_source, { name }) => {
-        //       const extractedType = 'Person';
-        //       ogm.model(extractedType);
-        //       const companies = [];
-        //       return companies;
-        //     },
-        //   },
-        // };
-
         const neo4jGraphQL = new Neo4jGraphQL({ typeDefs, driver });
         const schema = await neo4jGraphQL.getSchema();
 
