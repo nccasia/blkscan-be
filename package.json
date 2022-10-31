@@ -22,6 +22,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@neo4j/graphql": "^3.11.1",
+    "@neo4j/graphql-ogm": "^3.11.1",
     "@nestjs/apollo": "^10.1.4",
     "@nestjs/axios": "^0.1.0",
     "@nestjs/common": "^9.0.0",

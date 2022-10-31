@@ -1,0 +1,27 @@
+interface Send @relationshipProperties {
+  volumne: Int
+}
+
+type Address {
+  address: ID!
+  desc: String
+  # addressSenders: [Address!]! @relationship(type: "SEND", direction: OUT)
+  addressSenders: [Address!]!
+    @relationship(type: "SEND", direction: OUT, properties: "Send")
+  addressReceivers: [Address!]!
+    @relationship(type: "SEND", direction: IN, properties: "Send")
+}
+
+input CreateAddressInput {
+  address: String
+  desc: String
+}
+
+type Query {
+  getAddresses: [Address]
+  getAddress(address: ID!): Address
+}
+
+type Mutation {
+  createAddress(createAddressInput: CreateAddressInput): Address
+}
