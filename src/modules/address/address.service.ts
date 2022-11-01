@@ -98,6 +98,7 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
   }
 
   findAll() {
+    console.log('🚀 ~ ~ findAll');
     return super.findAll({ orderBy: 'name' });
   }
 }
