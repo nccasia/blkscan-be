@@ -15,8 +15,8 @@ export class WalletsController {
     return this.walletsService.testWriteNeo4j();
   }
 
-  @Get('testReadNeo4j')
-  testReadNeo4j() {
-    return this.walletsService.testReadNeo4j();
+  @Get('getGraph')
+  getGraph() {
+    return this.walletsService.getGraph();
   }
 }

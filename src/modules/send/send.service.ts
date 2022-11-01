@@ -28,4 +28,22 @@ export class SendService extends Neo4jRelationshipModelService<SendDto> {
       return [addressSender, send, addressReceiver];
     });
   }
+
+  async saveGraph(from: string, to: string, val: number): Promise<boolean> {
+    await this.neo4jService.run({
+      cypher: `MERGE (fromAddress:Addresses {address: ${from}})
+        ON CREATE
+          SET fromAddress.val = ${val}
+        ON MATCH
+          SET fromAddress.val = fromAddress.val + ${val}
+        MERGE (toAddress:Addresses {address: ${to}})
+        ON CREATE
+          SET toAddress.val = ${val}
+        ON MATCH
+          SET toAddress.val = toAddress.val + ${val}
+        MERGE (fromAddress)-[r:Send]->(toAddress)
+        RETURN fromAddress, toAddress`,
+    });
+    return true;
+  }
 }
