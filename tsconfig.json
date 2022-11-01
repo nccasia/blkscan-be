@@ -18,5 +18,10 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true
+  },
+  "watchOptions": {
+    "excludeFiles": [
+      "src/gen/graphql.schema.ts"
+    ]
   }
 }
