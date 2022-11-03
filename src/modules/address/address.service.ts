@@ -3,10 +3,6 @@ import { Neo4jNodeModelService, Neo4jService } from '@nhogs/nestjs-neo4j';
 import { SendDto } from '../send/dto/send.dto';
 import { SendService } from '../send/send.service';
 import { AddressDto } from './dto/address.dto';
-export interface Nodes {
-  id: string;
-  val: number;
-}
 
 @Injectable()
 export class AddressService extends Neo4jNodeModelService<AddressDto> {
@@ -47,17 +43,17 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
   async saveGraph(from: string, to: string, val: number): Promise<any> {
     const rs = await this.neo4jService.run(
       {
-        cypher: `MERGE (fromAddress:Addresses {address: "${from}"})
+        cypher: `MERGE (fromAddress:Address {address: "${from}"})
         ON CREATE
           SET fromAddress.val = ${val}
         ON MATCH
           SET fromAddress.val = fromAddress.val + ${val}
-        MERGE (toAddress:Addresses {address: "${to}"})
+        MERGE (toAddress:Address {address: "${to}"})
         ON CREATE
           SET toAddress.val = ${val}
         ON MATCH
           SET toAddress.val = toAddress.val + ${val}
-        MERGE (fromAddress)-[s:Send {value: ${val}}]->(toAddress)
+        MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
         RETURN fromAddress, toAddress`,
       },
       { write: true },
@@ -67,38 +63,47 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
 
   async getGraph() {
     const queryResult = await this.neo4jService.run({
-      cypher:
-        'MATCH (from: Addresses)-[s:Send]-(to:Addresses)  return from, to, s LIMIT 10000',
+      cypher: 'MATCH p=()-[s:Send]->() RETURN p LIMIT 1000',
     });
 
     const data = queryResult.records.map((data) => data.toObject());
     const key = 'id';
 
-    const nodes: Nodes[] = data.map((a) => {
-      return {
-        id: a.from.properties.address,
-        val: a.from.properties.val?.low
-          ? a.from.properties.val?.low
-          : a.from.properties.val?.low === 0
+    const nodes = data.map((d) => {
+      const startNode = {
+        id: d.p.start.properties.address,
+        val: d.p.start.properties.val?.low
+          ? d.p.start.properties.val?.low
+          : d.p.start.properties.val?.low === 0
           ? 0
-          : a.from.properties.val,
+          : d.p.start.properties.val,
       };
+
+      const endNode = {
+        id: d.p.end.properties.address,
+        val: d.p.end.properties.val?.low
+          ? d.p.end.properties.val?.low
+          : d.p.end.properties.val?.low === 0
+          ? 0
+          : d.p.end.properties.val,
+      };
+      return [startNode, endNode];
     });
+
     const nodesUniqueByKey = [
-      ...new Map(nodes.map((item) => [item[key], item])).values(),
+      ...new Map(nodes.flat().map((item) => [item[key], item])).values(),
     ];
 
-    const links = data.map((a) => {
+    const links = data.map((d) => {
       return {
-        source: a.from.properties.address,
-        target: a.to.properties.address,
+        source: d.p.start.properties.address,
+        target: d.p.end.properties.address,
       };
     });
     return { nodes: nodesUniqueByKey, links };
   }
 
   findAll() {
-    console.log('🚀 ~ ~ findAll');
     return super.findAll({ orderBy: 'name' });
   }
 }

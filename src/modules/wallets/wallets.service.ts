@@ -40,7 +40,7 @@ export class WalletsService {
     const ENDPOINT =
       'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
 
-    const repository = this.walletRepository;
+    // const repository = this.walletRepository;
     const wallets = await this.findAll();
 
     const adresses = new Set<string>();
@@ -66,8 +66,15 @@ export class WalletsService {
         console.log('subscriptionId: ', subscriptionId);
       },
     );
-
+    let i = 0;
     const data = subscription.on('data', async (blockHeader) => {
+      i++;
+      if (i === 7) {
+        web3.eth.clearSubscriptions((error: Error, result: boolean) => {
+          console.log(result);
+        });
+      }
+
       const headers = { 'Content-Type': 'application/json' };
       const dataBody = {
         jsonrpc: '2.0',
@@ -84,14 +91,13 @@ export class WalletsService {
 
       for await (const tr of transactions) {
         await web3.eth.getTransaction(tr, async (err, result: Transaction) => {
-          const fromAddress = result.from || 'from';
-          const toAddress = result.to || 'to';
-          if (!result.to) {
-            console.log('rss', result);
-          }
-          const value = parseFloat(result.value) / 1000000000000000000;
+          const fromAddress = result.from;
+          const toAddress = result.to;
+          if (result.to) {
+            const value = parseFloat(result.value) / 1000000000000000000;
 
-          await this.addressService.saveGraph(fromAddress, toAddress, value);
+            await this.addressService.saveGraph(fromAddress, toAddress, value);
+          }
         });
       }
 
