@@ -10,6 +10,10 @@ import { CreateWalletDto } from './dto/create-wallet.dto';
 import { Transaction } from 'src/shared/interfaces/transaction';
 import { Neo4jService } from '@nhogs/nestjs-neo4j';
 import { AddressService } from '../address/address.service';
+export interface Nodes {
+  id: string;
+  val: number;
+}
 
 @Injectable()
 export class WalletsService {
@@ -23,26 +27,11 @@ export class WalletsService {
   ) {}
 
   async testWriteNeo4j() {
-    const array = [
-      { from: 'a', to: 'b', send: 100 },
-      { from: 'a', to: 'c', send: 200 },
-      { from: 'b', to: 'd', send: 300 },
-    ];
-    array.forEach(async (o) => {
-      await this.addressService.createWithSendRelationship(
-        { address: o.from },
-        { address: o.to },
-        { volume: o.send },
-      );
-    });
-    return true;
+    return 'test';
   }
 
-  async testReadNeo4j() {
-    const queryResult = await this.neo4jService.run({
-      cypher: 'MATCH (n) RETURN count(n) AS count',
-    });
-    return queryResult.records[0].get('count') + ' records';
+  async getGraph(limit = 10000) {
+    return this.addressService.getGraph(limit);
   }
 
   async crawlWallet() {
@@ -51,7 +40,7 @@ export class WalletsService {
     const ENDPOINT =
       'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
 
-    const repository = this.walletRepository;
+    // const repository = this.walletRepository;
     const wallets = await this.findAll();
 
     const adresses = new Set<string>();
@@ -77,8 +66,15 @@ export class WalletsService {
         console.log('subscriptionId: ', subscriptionId);
       },
     );
-
+    let i = 0;
     const data = subscription.on('data', async (blockHeader) => {
+      i++;
+      if (i === 7) {
+        web3.eth.clearSubscriptions((error: Error, result: boolean) => {
+          console.log(result);
+        });
+      }
+
       const headers = { 'Content-Type': 'application/json' };
       const dataBody = {
         jsonrpc: '2.0',
@@ -91,38 +87,54 @@ export class WalletsService {
         .pipe();
 
       const { data: wallets } = await lastValueFrom(res);
+      const transactions = wallets?.result?.transactions;
 
-      wallets.result.transactions.forEach((tr: string) => {
-        web3.eth.getTransaction(tr, async (err, result: Transaction) => {
-          const fromAddress = result.from || 'from';
-          const toAddress = result.to || 'to';
-          await this.addressService.createWithSendRelationship(
-            { address: fromAddress },
-            { address: toAddress },
-            { volume: 0 },
-          );
-          // if (fromAddress) {
-          //   if (!adresses.has(fromAddress)) {
-          //     console.log('fromAddress -->', fromAddress);
-          //     adresses.add(fromAddress);
-          //     // await repository.save({
-          //     //   address: fromAddress,
-          //     // });
-          //   }
-          // }
+      for await (const tr of transactions) {
+        await web3.eth.getTransaction(tr, async (err, result: Transaction) => {
+          const fromAddress = result.from;
+          const toAddress = result.to;
+          if (result.to) {
+            const value = parseFloat(result.value) / 1000000000000000000;
 
-          // if (toAddress) {
-          //   if (!adresses.has(toAddress)) {
-          //     console.log('toAddress -->', toAddress);
-          //     adresses.add(toAddress);
-          //     // await repository.save({
-          //     //   address: toAddress,
-          //     //   type: result.type,
-          //     // });
-          //   }
-          // }
+            await this.addressService.saveGraph(fromAddress, toAddress, value);
+          }
         });
-      });
+      }
+
+      // wallets.result.transactions.forEach((tr: string) => {
+      //   web3.eth.getTransaction(tr, async (err, result: Transaction) => {
+      //     const fromAddress = result.from || 'from';
+      //     const toAddress = result.to || 'to';
+      //     const value = parseFloat(result.value) / 1000000000000000000;
+
+      //     await this.addressService.saveGraph(fromAddress, toAddress, value);
+      // await this.addressService.createWithSendRelationship(
+      //   { address: fromAddress },
+      //   { address: toAddress },
+      //   { volume: 0 },
+      // );
+      // if (fromAddress) {
+      //   if (!adresses.has(fromAddress)) {
+      //     console.log('fromAddress -->', fromAddress);
+      //     adresses.add(fromAddress);
+      //     // await repository.save({
+      //     //   address: fromAddress,
+      //     // });
+      //   }
+      // }
+
+      // if (toAddress) {
+      //   if (!adresses.has(toAddress)) {
+      //     console.log('toAddress -->', toAddress);
+      //     adresses.add(toAddress);
+      //     // await repository.save({
+      //     //   address: toAddress,
+      //     //   type: result.type,
+      //     // });
+      //   }
+      // }
+      // });
+      // });
     });
 
     data.on('changed', (changed) => console.log(changed));

@@ -1,27 +1,37 @@
-interface Send @relationshipProperties {
-  volumne: Int
+interface Send {
+  value: Float
 }
 
-type Address @node {
-  address: ID! @unique
-  total: Int
+type Address {
+  address: ID!
+  totalValue: Float
   desc: String
-  # addressSenders: [Address!]! @relationship(type: "SEND", direction: OUT)
-  addressSenders: [Address!]!
-    @relationship(type: "SEND", direction: OUT, properties: "Send")
-  addressReceivers: [Address!]!
-    @relationship(type: "SEND", direction: IN, properties: "Send")
 }
+type Node {
+id: String
+totalValue: Float
+}
+type Link {
+  source: String
+  target: String
+}
+
+type Graph {
+nodes: [Node]
+links: [Link]
+}
+
 
 input CreateAddressInput {
   address: String
-  total: Int
+  totalValue: Float
   desc: String
 }
 
 type Query {
   getAddresses: [Address]
   getAddress(address: ID!): Address
+  getGraph(limit: Int): Graph
 }
 
 type Mutation {

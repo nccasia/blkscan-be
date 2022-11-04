@@ -40,8 +40,69 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
     return trans.close();
   }
 
+  async saveGraph(from: string, to: string, val: number): Promise<any> {
+    const rs = await this.neo4jService.run(
+      {
+        cypher: `MERGE (fromAddress:Address {address: "${from}"})
+        ON CREATE
+          SET fromAddress.totalValue = ${val}
+        ON MATCH
+          SET fromAddress.totalValue = fromAddress.totalValue + ${val}
+        MERGE (toAddress:Address {address: "${to}"})
+        ON CREATE
+          SET toAddress.totalValue = ${val}
+        ON MATCH
+          SET toAddress.totalValue = toAddress.totalValue + ${val}
+        MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
+        RETURN fromAddress, toAddress`,
+      },
+      { write: true },
+    );
+    return rs;
+  }
+
+  async getGraph(limit = 10000) {
+    const queryResult = await this.neo4jService.run({
+      cypher: `MATCH p=()-[s:Send]->() RETURN p LIMIT ${limit}`,
+    });
+
+    const data = queryResult.records.map((data) => data.toObject());
+    const key = 'id';
+    const nodes = data.map((d) => {
+      const startNode = {
+        id: d.p.start.properties.address,
+        totalValue: d.p.start.properties.totalValue?.low
+          ? d.p.start.properties.totalValue?.low
+          : d.p.start.properties.totalValue?.low === 0
+          ? 0
+          : d.p.start.properties.totalValue,
+      };
+
+      const endNode = {
+        id: d.p.end.properties.address,
+        totalValue: d.p.end.properties.totalValue?.low
+          ? d.p.end.properties.totalValue?.low
+          : d.p.end.properties.totalValue?.low === 0
+          ? 0
+          : d.p.end.properties.totalValue,
+      };
+      return [startNode, endNode];
+    });
+
+    const nodesUniqueByKey = [
+      ...new Map(nodes.flat().map((item) => [item[key], item])).values(),
+    ];
+
+    const links = data.map((d) => {
+      return {
+        source: d.p.start.properties.address,
+        target: d.p.end.properties.address,
+      };
+    });
+    return { nodes: nodesUniqueByKey, links };
+  }
+
   findAll() {
-    console.log('🚀 ~ ~ findAll');
     return super.findAll({ orderBy: 'name' });
   }
 }
