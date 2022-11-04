@@ -10,7 +10,7 @@
 
 export interface CreateAddressInput {
     address?: Nullable<string>;
-    val?: Nullable<number>;
+    totalValue?: Nullable<number>;
     desc?: Nullable<string>;
 }
 
@@ -21,14 +21,14 @@ export interface Send {
 export interface Address {
     __typename?: 'Address';
     address: string;
-    val?: Nullable<number>;
+    totalValue?: Nullable<number>;
     desc?: Nullable<string>;
 }
 
 export interface Node {
     __typename?: 'Node';
     id?: Nullable<string>;
-    val?: Nullable<number>;
+    totalValue?: Nullable<number>;
 }
 
 export interface Link {
@@ -47,7 +47,7 @@ export interface IQuery {
     __typename?: 'IQuery';
     getAddresses(): Nullable<Nullable<Address>[]> | Promise<Nullable<Nullable<Address>[]>>;
     getAddress(address: string): Nullable<Address> | Promise<Nullable<Address>>;
-    getGraph(): Nullable<Graph> | Promise<Nullable<Graph>>;
+    getGraph(limit?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
 }
 
 export interface IMutation {

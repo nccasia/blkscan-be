@@ -30,8 +30,8 @@ export class WalletsService {
     return 'test';
   }
 
-  async getGraph() {
-    return this.addressService.getGraph();
+  async getGraph(limit = 10000) {
+    return this.addressService.getGraph(limit);
   }
 
   async crawlWallet() {

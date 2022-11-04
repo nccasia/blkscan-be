@@ -4,12 +4,12 @@ interface Send {
 
 type Address {
   address: ID!
-  val: Float
+  totalValue: Float
   desc: String
 }
 type Node {
 id: String
-val: Float
+totalValue: Float
 }
 type Link {
   source: String
@@ -24,14 +24,14 @@ links: [Link]
 
 input CreateAddressInput {
   address: String
-  val: Float
+  totalValue: Float
   desc: String
 }
 
 type Query {
   getAddresses: [Address]
   getAddress(address: ID!): Address
-  getGraph: Graph
+  getGraph(limit: Int): Graph
 }
 
 type Mutation {

@@ -45,14 +45,14 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
       {
         cypher: `MERGE (fromAddress:Address {address: "${from}"})
         ON CREATE
-          SET fromAddress.val = ${val}
+          SET fromAddress.totalValue = ${val}
         ON MATCH
-          SET fromAddress.val = fromAddress.val + ${val}
+          SET fromAddress.totalValue = fromAddress.totalValue + ${val}
         MERGE (toAddress:Address {address: "${to}"})
         ON CREATE
-          SET toAddress.val = ${val}
+          SET toAddress.totalValue = ${val}
         ON MATCH
-          SET toAddress.val = toAddress.val + ${val}
+          SET toAddress.totalValue = toAddress.totalValue + ${val}
         MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
         RETURN fromAddress, toAddress`,
       },
@@ -61,31 +61,30 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
     return rs;
   }
 
-  async getGraph() {
+  async getGraph(limit = 10000) {
     const queryResult = await this.neo4jService.run({
-      cypher: 'MATCH p=()-[s:Send]->() RETURN p LIMIT 1000',
+      cypher: `MATCH p=()-[s:Send]->() RETURN p LIMIT ${limit}`,
     });
 
     const data = queryResult.records.map((data) => data.toObject());
     const key = 'id';
-
     const nodes = data.map((d) => {
       const startNode = {
         id: d.p.start.properties.address,
-        val: d.p.start.properties.val?.low
-          ? d.p.start.properties.val?.low
-          : d.p.start.properties.val?.low === 0
+        totalValue: d.p.start.properties.totalValue?.low
+          ? d.p.start.properties.totalValue?.low
+          : d.p.start.properties.totalValue?.low === 0
           ? 0
-          : d.p.start.properties.val,
+          : d.p.start.properties.totalValue,
       };
 
       const endNode = {
         id: d.p.end.properties.address,
-        val: d.p.end.properties.val?.low
-          ? d.p.end.properties.val?.low
-          : d.p.end.properties.val?.low === 0
+        totalValue: d.p.end.properties.totalValue?.low
+          ? d.p.end.properties.totalValue?.low
+          : d.p.end.properties.totalValue?.low === 0
           ? 0
-          : d.p.end.properties.val,
+          : d.p.end.properties.totalValue,
       };
       return [startNode, endNode];
     });

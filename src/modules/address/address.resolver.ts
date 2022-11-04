@@ -1,5 +1,5 @@
 import { AddressService } from './address.service';
-import { Query, Resolver } from '@nestjs/graphql';
+import { Args, Query, Resolver } from '@nestjs/graphql';
 
 @Resolver('Address')
 export class AddressResolver {
@@ -21,8 +21,11 @@ export class AddressResolver {
   // }
 
   @Query('getGraph')
-  async getGraph() {
-    return this.addresssService.getGraph();
+  async getGraph(
+    @Args('limit')
+    limit?: number,
+  ) {
+    return this.addresssService.getGraph(limit);
   }
 
   // @Mutation('createAddress')
