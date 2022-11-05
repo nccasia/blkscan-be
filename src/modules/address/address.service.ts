@@ -102,6 +102,47 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
     return { nodes: nodesUniqueByKey, links };
   }
 
+  async searchGraph(id: string) {
+    const queryResult = await this.neo4jService.run({
+      cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) where n.address="${id}" OR a.address="${id}" return p`,
+    });
+
+    const data = queryResult.records.map((data) => data.toObject());
+    const key = 'id';
+    const nodes = data.map((d) => {
+      const startNode = {
+        id: d.p.start.properties.address,
+        totalValue: d.p.start.properties.totalValue?.low
+          ? d.p.start.properties.totalValue?.low
+          : d.p.start.properties.totalValue?.low === 0
+          ? 0
+          : d.p.start.properties.totalValue,
+      };
+
+      const endNode = {
+        id: d.p.end.properties.address,
+        totalValue: d.p.end.properties.totalValue?.low
+          ? d.p.end.properties.totalValue?.low
+          : d.p.end.properties.totalValue?.low === 0
+          ? 0
+          : d.p.end.properties.totalValue,
+      };
+      return [startNode, endNode];
+    });
+
+    const nodesUniqueByKey = [
+      ...new Map(nodes.flat().map((item) => [item[key], item])).values(),
+    ];
+
+    const links = data.map((d) => {
+      return {
+        source: d.p.start.properties.address,
+        target: d.p.end.properties.address,
+      };
+    });
+    return { nodes: nodesUniqueByKey, links };
+  }
+
   findAll() {
     return super.findAll({ orderBy: 'name' });
   }

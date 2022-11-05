@@ -28,6 +28,13 @@ export class AddressResolver {
     return this.addresssService.getGraph(limit);
   }
 
+  @Query('searchGraph')
+  async searchGraph(
+    @Args('id')
+    id: string,
+  ) {
+    return this.addresssService.searchGraph(id);
+  }
   // @Mutation('createAddress')
   // async create(
   //   @Args('createAddressInput') args: CreateAddressDto,

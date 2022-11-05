@@ -32,6 +32,7 @@ type Query {
   getAddresses: [Address]
   getAddress(address: ID!): Address
   getGraph(limit: Int): Graph
+  searchGraph(id: ID!): Graph
 }
 
 type Mutation {
