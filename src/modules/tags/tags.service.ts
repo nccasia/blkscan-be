@@ -1,4 +1,4 @@
-import { Injectable, Inject, ConflictException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,7 @@ import * as cheerio from 'cheerio';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { WalletsService } from '../wallets/wallets.service';
+import { sleep } from 'src/utils/sleep';
 
 @Injectable()
 export class TagsService {
@@ -23,59 +24,79 @@ export class TagsService {
 
   async saveTags() {
     const timeToUpdate = 180 * 2592000; // six month
-    const currentTime = new Date().getTime();
+    const now = new Date();
     const lst = await this.walletService.findAll();
 
+    // const listWallet = lst;
     const listWallet = lst.filter(
-      (w) => !w.lastUpdate || currentTime - w.lastUpdate > timeToUpdate,
+      (w) => !w.lastUpdate || now.getTime() - w.lastUpdate > timeToUpdate,
     );
-    console.log(listWallet);
+    console.log('🚀listWallet', lst.length, listWallet.length, listWallet[0]);
+    const batchSize = 3;
 
-    for (let i = 0; i < listWallet.length; i++) {
-      const wallet = listWallet[i];
-      const singleAddress = wallet.address;
-      await this.saveTagFromAddres(singleAddress);
-      await this.walletService.update(singleAddress, {
-        lastUpdate: new Date().getTime(),
-      });
+    for (let i = 0; i < listWallet.length; i += batchSize) {
+      console.log('🚀 i', i);
+      const tempList = listWallet.slice(i, i + batchSize);
+      const res = await Promise.allSettled(
+        tempList.map(async (wallet) =>
+          this.saveTagsAndWallet(wallet.address, now),
+        ),
+      );
+      const errors = res.filter((o) => o.status === 'rejected');
+      console.log('🚀 errors', errors.length, errors[0]);
+      await sleep(3000);
     }
+    // for (let i = 0; i < listWallet.length; i++) {
+    //   const wallet = listWallet[i];
+    //   const singleAddress = wallet.address;
+    //   await this.saveTagFromAddres(singleAddress);
+    //   await this.walletService.update(singleAddress, {
+    //     lastUpdate: new Date().getTime(),
+    //   });
+    // }
 
     return 'results';
   }
 
-  async saveTagFromAddres(address: string) {
+  async saveTagsFromAddres(address: string) {
+    const url = this.configService.get<string>('URL_PREFIX') + address;
     try {
-      const URL = this.configService.get<string>('URL_PREFIX') + address;
-      const tagElements = await firstValueFrom(this.getDataFromAddress(URL));
-      const isListTags = tagElements.length > 0;
-      console.log('saveTagFromAddres');
+      const tagElements = await firstValueFrom(this.getDataFromAddress(url));
+      if (tagElements.length < 1) {
+        return [];
+      }
 
-      const tags =
-        isListTags &&
-        (await Promise.all(
-          tagElements.map(async (tag) => {
-            const tagExisted = await this.tagRepository.findOne({
-              where: {
-                tag,
-                wallet: address,
-              },
-            });
+      const existedTags = await this.tagRepository.find({
+        where: {
+          walletAddress: address,
+        },
+      });
+      const tagMap = new Map<string, boolean>();
+      existedTags.forEach((tag) => tagMap.set(tag.tag, true));
+      const newTags = tagElements
+        .filter((t) => !tagMap.has(t))
+        .map((tag) => ({
+          tag,
+          walletAddress: address,
+        }));
+      const tags = this.tagRepository.create(newTags);
+      tags && (await this.tagRepository.insert(tags));
+      console.log('🚀 saveTagsFromAddres', tags.length);
 
-            if (tagExisted) {
-              throw new ConflictException('Tag with wallet adress is exited!');
-            }
-            return await this.tagRepository.create({
-              tag,
-              wallet: address,
-            });
-          }),
-        ));
-      isListTags && (await this.tagRepository.save(tags));
-
-      return isListTags ? tags : [];
+      return tags || [];
     } catch (error) {
-      console.log(error);
+      // console.log(error);
+      console.log('saveTagFromAddres', url);
+      throw error;
     }
+  }
+
+  async saveTagsAndWallet(address: string, date: Date) {
+    const tags = await this.saveTagsFromAddres(address);
+    tags.length &&
+      (await this.walletService.update(address, {
+        lastUpdate: date.getTime(),
+      }));
   }
 
   getDataFromAddress(URL: string): Observable<string[]> {
@@ -83,7 +104,7 @@ export class TagsService {
       map((resp: any) => {
         const html = resp.data;
         const $ = cheerio.load(html);
-        let tags: string[] = [];
+        const tags: string[] = [];
         const myNameTag = $(
           '#ContentPlaceHolder1_tr_tokeninfo div.row.align-items-center div.col-md-8 a',
         )
@@ -100,31 +121,31 @@ export class TagsService {
 
         for (let i = 0; i < lstTags.length; i++) {
           const tag = $(lstTags[i]);
-
           const tagname = tag.text().trim();
           if (tagname) tags.push(tagname);
         }
-        if (publicTagName) tags = [...tags, publicTagName];
-        if (myNameTag) tags = [...tags, myNameTag];
+
+        if (publicTagName) tags.push(publicTagName);
+        if (myNameTag) tags.push(myNameTag);
         return tags;
       }),
     );
   }
 
   create(createTagDto: CreateTagDto) {
-    return this.tagRepository.save(createTagDto);
+    return this.tagRepository.insert(createTagDto);
   }
 
   findAll() {
-    return this.tagRepository.find();
+    return this.tagRepository.find({ relations: { wallet: true } });
   }
 
   findOne(id: number) {
     return this.tagRepository.findOneBy({ id });
   }
 
-  getAllTagsOfWallet(wallet: string) {
-    return this.tagRepository.findBy({ wallet });
+  getAllTagsOfWallet(walletAddress: string) {
+    return this.tagRepository.findBy({ walletAddress });
   }
 
   update(id: number, updateTagDto: UpdateTagDto) {

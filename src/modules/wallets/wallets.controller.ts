@@ -9,4 +9,14 @@ export class WalletsController {
   crawlWallet() {
     return this.walletsService.crawlWallet();
   }
+
+  @Get('testWriteNeo4j')
+  testWriteNeo4j() {
+    return this.walletsService.testWriteNeo4j();
+  }
+
+  @Get('getGraph')
+  getGraph() {
+    return this.walletsService.getGraph();
+  }
 }

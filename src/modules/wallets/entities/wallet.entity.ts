@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Tag } from 'src/modules/tags/entities/tag.entity';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 
 @Entity('wallets')
 export class Wallet {
@@ -13,4 +14,7 @@ export class Wallet {
 
   @Column({ nullable: true })
   desc: string;
+
+  @OneToMany(() => Tag, (tag) => tag.wallet)
+  tags: Tag[];
 }
