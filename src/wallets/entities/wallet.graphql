@@ -17,8 +17,8 @@ type Link {
 }
 
 type Graph {
-nodes: [Node]
-links: [Link]
+  nodes: [Node]
+  links: [Link]
 }
 
 

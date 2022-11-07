@@ -1,8 +1,12 @@
-import { Tag } from 'src/modules/tags/entities/tag.entity';
+import { Tag } from 'src/wallets/entities/tag.entity';
 import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 
 @Entity('wallets')
 export class Wallet {
+  constructor(partial: Partial<Wallet>) {
+    Object.assign(this, partial);
+  }
+
   @PrimaryColumn()
   address: string;
 

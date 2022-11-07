@@ -1,15 +1,15 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { CreateTagDto } from './dto/create-tag.dto';
-import { UpdateTagDto } from './dto/update-tag.dto';
+import { CreateTagDto } from '../dto/create-tag.dto';
+import { UpdateTagDto } from '../dto/update-tag.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Tag } from './entities/tag.entity';
+import { Tag } from '../entities/tag.entity';
 import { Repository } from 'typeorm';
 import { map, Observable, firstValueFrom } from 'rxjs';
 import * as cheerio from 'cheerio';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { WalletsService } from '../wallets/wallets.service';
-import { sleep } from 'src/utils/sleep';
+import { WalletsService } from 'src/wallets/services/wallets.service';
+import { sleep } from 'src/common/utils/sleep';
 
 @Injectable()
 export class TagsService {
@@ -25,7 +25,7 @@ export class TagsService {
   async saveTags() {
     const timeToUpdate = 180 * 2592000; // six month
     const now = new Date();
-    const lst = await this.walletService.findAll();
+    const lst = await this.walletService.findMany();
 
     // const listWallet = lst;
     const listWallet = lst.filter(
@@ -94,7 +94,7 @@ export class TagsService {
   async saveTagsAndWallet(address: string, date: Date) {
     const tags = await this.saveTagsFromAddres(address);
     tags.length &&
-      (await this.walletService.update(address, {
+      (await this.walletService.updateWallet(address, {
         lastUpdate: date.getTime(),
       }));
   }

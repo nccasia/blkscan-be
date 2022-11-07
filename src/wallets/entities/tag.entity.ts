@@ -1,14 +1,18 @@
-import { Wallet } from 'src/modules/wallets/entities/wallet.entity';
+import { Wallet } from 'src/wallets/entities/wallet.entity';
 import {
   Column,
   Entity,
   PrimaryGeneratedColumn,
-  BaseEntity,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
 @Entity('tags')
-export class Tag extends BaseEntity {
+export class Tag {
+  constructor(partial: Partial<Tag>) {
+    Object.assign(this, partial);
+  }
+
   @PrimaryGeneratedColumn()
   id: number;
 
