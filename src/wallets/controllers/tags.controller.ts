@@ -7,9 +7,9 @@ import {
   Param,
   Delete,
 } from '@nestjs/common';
-import { TagsService } from './tags.service';
-import { CreateTagDto } from './dto/create-tag.dto';
-import { UpdateTagDto } from './dto/update-tag.dto';
+import { TagsService } from 'src/wallets/services/tags.service';
+import { CreateTagDto } from 'src/wallets/dto/create-tag.dto';
+import { UpdateTagDto } from 'src/wallets/dto/update-tag.dto';
 
 @Controller('tags')
 export class TagsController {

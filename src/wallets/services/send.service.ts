@@ -3,8 +3,8 @@ import {
   Neo4jRelationshipModelService,
   Neo4jService,
 } from '@nhogs/nestjs-neo4j';
-import { AddressDto } from '../address/dto/address.dto';
-import { SendDto } from './dto/send.dto';
+import { AddressDto } from 'src/wallets/dto/address.dto';
+import { SendDto } from 'src/wallets/dto/send.dto';
 
 @Injectable()
 export class SendService extends Neo4jRelationshipModelService<SendDto> {

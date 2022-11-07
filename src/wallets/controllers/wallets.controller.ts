@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { WalletsService } from './wallets.service';
+import { WalletsService } from '../services/wallets.service';
 
 @Controller('wallets')
 export class WalletsController {
@@ -8,11 +8,6 @@ export class WalletsController {
   @Get('crawl-wallet')
   crawlWallet() {
     return this.walletsService.crawlWallet();
-  }
-
-  @Get('testWriteNeo4j')
-  testWriteNeo4j() {
-    return this.walletsService.testWriteNeo4j();
   }
 
   @Get('getGraph')

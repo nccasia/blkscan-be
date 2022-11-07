@@ -12,4 +12,7 @@ export class CreateWalletDto {
   @IsString()
   @IsOptional()
   desc: string;
+  constructor(partial: Partial<CreateWalletDto>) {
+    Object.assign(this, partial);
+  }
 }
