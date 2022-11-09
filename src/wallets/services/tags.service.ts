@@ -95,7 +95,7 @@ export class TagsService {
     const tags = await this.saveTagsFromAddres(address);
     tags.length &&
       (await this.walletService.updateWallet(address, {
-        lastUpdate: date.getTime(),
+        updatedAt: date,
       }));
   }
 

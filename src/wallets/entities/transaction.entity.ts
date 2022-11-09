@@ -1,4 +1,10 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ConvertedTransaction } from './convertedTransaction.entity';
 
 @Entity('transactions')
@@ -19,8 +25,12 @@ export class Transaction {
   @Column({ type: 'float' })
   value: number;
 
-  @Column({ nullable: true, type: 'bigint' })
-  lastUpdate: number;
+  @UpdateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'now()',
+    onUpdate: 'now()',
+  })
+  updatedAt: Date;
 
   @OneToOne(
     () => ConvertedTransaction,
