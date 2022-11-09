@@ -156,7 +156,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     return this.walletRepository.find();
   }
 
-  createWallet(createWalletDto: CreateWalletDto) {
+  createWallet(createWalletDto: CreateWalletDto | CreateWalletDto[]) {
     return this.walletRepository.insert(createWalletDto);
   }
 

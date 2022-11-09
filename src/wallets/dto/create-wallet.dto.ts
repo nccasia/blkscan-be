@@ -6,14 +6,14 @@ export class CreateWalletDto {
 
   @IsNumber()
   @IsOptional()
-  type: number;
+  type?: number;
 
   @IsString()
   @IsOptional()
-  desc: string;
+  desc?: string;
 
   @IsOptional()
-  updatedAt: Date;
+  updatedAt?: Date;
 
   constructor(partial: Partial<CreateWalletDto>) {
     Object.assign(this, partial);
