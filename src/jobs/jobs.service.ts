@@ -20,18 +20,10 @@ export class JobsService implements OnApplicationBootstrap {
     return this.transactionsService.crawlWallet();
   }
 
-  @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Asia/Ho_Chi_Minh' })
-  // @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
-  handleCron() {
-    this.logger.debug('Called when the current second is 45');
-  }
-
+  // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
-  async handleCron2() {
-    console.log('🚀 EVERY_10_SECONDS', new Date());
-    // this.transactionsService.create();
-    // this.transactionsService.convertMany([4, 3]);
-    const res = await this.transactionsService.findAllUnconverted();
-    console.log('🚀 ~ res', res);
+  async saveTransactionsToNeo4j() {
+    const res = await this.transactionsService.findWithConverted(false);
+    console.log('findWithConverted false', res.length);
   }
 }

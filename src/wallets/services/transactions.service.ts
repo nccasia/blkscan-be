@@ -71,11 +71,11 @@ export class TransactionsService {
     return this.transactionRepository.find();
   }
 
-  async findAllUnconverted() {
+  async findWithConverted(needConverted: boolean) {
     const query = this.dataSource
       .createQueryBuilder(Transaction, 't')
       .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
-      .where('ct.transactionId IS NULL');
+      .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`);
     this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
     return result;
