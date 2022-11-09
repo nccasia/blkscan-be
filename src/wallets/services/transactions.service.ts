@@ -9,6 +9,8 @@ import { Transaction } from '../entities/transaction.entity';
 import Web3 from 'web3';
 import { WalletsService } from './wallets.service';
 import { lastValueFrom } from 'rxjs';
+import { ITransaction } from 'src/common/interfaces/transaction';
+import { CreateWalletDto } from '../dto/create-wallet.dto';
 
 @Injectable()
 export class TransactionsService {
@@ -86,15 +88,11 @@ export class TransactionsService {
       'https://mainnet.infura.io/v3/d054692827b7449f9b46577dfa256134';
     const ENDPOINT =
       'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
-
-    // const repository = this.walletRepository;
-    const wallets = await this.walletService.findMany();
-
-    const adresses = new Set<string>();
-
-    wallets.forEach((wallet) => adresses.add(wallet.address));
-
     const web3 = new Web3(ENDPOINT);
+
+    const wallets = await this.walletService.findMany();
+    const existedWalletsMap = new Map<string, boolean>();
+    wallets.forEach((wallet) => existedWalletsMap.set(wallet.address, true));
 
     const newBlockHeaders = web3.eth.subscribe(
       'newBlockHeaders',
@@ -114,7 +112,7 @@ export class TransactionsService {
       },
     );
 
-    let insertData = [];
+    let insertTransactions: Partial<Transaction>[] = [];
     const data = subscription.on('data', async (blockHeader) => {
       const headers = { 'Content-Type': 'application/json' };
       const dataBody = {
@@ -130,64 +128,54 @@ export class TransactionsService {
       const { data: wallets } = await lastValueFrom(res);
       const transactions = wallets?.result?.transactions;
 
-      if (insertData?.length < 1000) {
+      if (insertTransactions?.length < 1000) {
         for await (const tr of transactions) {
-          await web3.eth.getTransaction(tr, async (err, result: any) => {
-            const fromAddress = result.from;
-            const toAddress = result.to;
-            if (result.to) {
-              const value = parseFloat(result.value) / 1000000000000000000;
+          await web3.eth.getTransaction(
+            tr,
+            async (err, result: ITransaction) => {
+              const fromAddress = result.from;
+              const toAddress = result.to;
+              if (result.to) {
+                const value = parseFloat(result.value) / 1000000000000000000;
 
-              insertData.push(
-                this.transactionRepository.create({
-                  from: fromAddress,
-                  to: toAddress,
-                  value: value,
-                }),
-              );
-              // await this.saveGraph(fromAddress, toAddress, value);
-            }
-          });
+                insertTransactions.push(
+                  this.transactionRepository.create({
+                    from: fromAddress,
+                    to: toAddress,
+                    value: value,
+                    type: result.type ?? null,
+                  }),
+                );
+                // await this.saveGraph(fromAddress, toAddress, value);
+              }
+            },
+          );
         }
       } else {
-        await this.transactionRepository.save(insertData);
-        insertData = [];
+        const insertWallets: CreateWalletDto[] = [];
+        insertTransactions.forEach((tran) => {
+          const fromAddress = tran.from;
+          const toAddress = tran.to;
+          if (fromAddress && !existedWalletsMap.has(fromAddress)) {
+            existedWalletsMap.set(fromAddress, true);
+            insertWallets.push({
+              address: fromAddress,
+            });
+          }
+          if (toAddress && !existedWalletsMap.has(toAddress)) {
+            existedWalletsMap.set(toAddress, true);
+            insertWallets.push({
+              address: toAddress,
+              type: tran.type,
+            });
+          }
+        });
+
+        await this.transactionRepository.insert(insertTransactions);
+        await this.walletService.createWallet(insertWallets);
+
+        insertTransactions = [];
       }
-
-      // wallets.result.transactions.forEach((tr: string) => {
-      //   web3.eth.getTransaction(tr, async (err, result: Transaction) => {
-      //     const fromAddress = result.from || 'from';
-      //     const toAddress = result.to || 'to';
-      //     const value = parseFloat(result.value) / 1000000000000000000;
-
-      //     await this.addressService.saveGraph(fromAddress, toAddress, value);
-      // await this.addressService.createWithSendRelationship(
-      //   { address: fromAddress },
-      //   { address: toAddress },
-      //   { volume: 0 },
-      // );
-      // if (fromAddress) {
-      //   if (!adresses.has(fromAddress)) {
-      //     console.log('fromAddress -->', fromAddress);
-      //     adresses.add(fromAddress);
-      //     // await repository.save({
-      //     //   address: fromAddress,
-      //     // });
-      //   }
-      // }
-
-      // if (toAddress) {
-      //   if (!adresses.has(toAddress)) {
-      //     console.log('toAddress -->', toAddress);
-      //     adresses.add(toAddress);
-      //     // await repository.save({
-      //     //   address: toAddress,
-      //     //   type: result.type,
-      //     // });
-      //   }
-      // }
-      // });
-      // });
     });
 
     data.on('changed', (changed) => console.log(changed));

@@ -1,4 +1,6 @@
-export interface Transaction {
+export type TransactionType = 0 | 2 | null;
+
+export interface ITransaction {
   blockHash: string;
   blockNumber: number;
   chainId: string;
@@ -12,7 +14,7 @@ export interface Transaction {
   s: string;
   to: string;
   transactionIndex: number;
-  type?: 0 | 2;
+  type?: TransactionType;
   v: string;
   value: string;
   accessList: Array<any>;
