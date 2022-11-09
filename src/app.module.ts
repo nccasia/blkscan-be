@@ -14,11 +14,13 @@ import { join } from 'path';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { WalletsModule } from './wallets/wallets.module';
 import { JobsModule } from './jobs/jobs.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot(configEnvPath),
     TypeOrmModule.forRootAsync({ useClass: TypeOrmConfigSerivce }),
+    ScheduleModule.forRoot(),
     Neo4jModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

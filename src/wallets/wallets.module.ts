@@ -9,11 +9,23 @@ import { WalletsResolver } from './resolvers/wallets.resolver';
 import { TagsService } from './services/tags.service';
 import { Tag } from './entities/tag.entity';
 import { SendService } from './services/send.service';
+import { Transaction } from './entities/trans.entity';
+import { ConvertedTransaction } from './entities/convertedTransaction.entity';
+import { TransactionsService } from './services/transactions.service';
 
 @Module({
-  imports: [HttpModule, TypeOrmModule.forFeature([Wallet, Tag])],
+  imports: [
+    HttpModule,
+    TypeOrmModule.forFeature([Wallet, Tag, Transaction, ConvertedTransaction]),
+  ],
   controllers: [WalletsController, TagsController],
-  providers: [WalletsResolver, WalletsService, TagsService, SendService],
-  exports: [WalletsService],
+  providers: [
+    WalletsResolver,
+    WalletsService,
+    TagsService,
+    SendService,
+    TransactionsService,
+  ],
+  exports: [WalletsService, TransactionsService],
 })
 export class WalletsModule {}
