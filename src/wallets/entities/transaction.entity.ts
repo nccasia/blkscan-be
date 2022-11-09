@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { ConvertedTransaction } from './convertedTransaction.entity';
 
 @Entity('transactions')
 export class Transaction {
@@ -20,4 +21,10 @@ export class Transaction {
 
   @Column({ nullable: true, type: 'bigint' })
   lastUpdate: number;
+
+  @OneToOne(
+    () => ConvertedTransaction,
+    (convertedTransaction) => convertedTransaction.transaction,
+  )
+  convertedTransaction: ConvertedTransaction;
 }

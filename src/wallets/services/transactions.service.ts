@@ -1,23 +1,85 @@
+import { Injectable, Logger } from '@nestjs/common';
+
+import { DataSource, Repository } from 'typeorm';
+import { ConvertedTransaction } from '../entities/convertedTransaction.entity';
 import { HttpService } from '@nestjs/axios';
-import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Neo4jService } from '@nhogs/nestjs-neo4j';
 import { Transaction } from '../entities/transaction.entity';
-import { Repository } from 'typeorm';
 import Web3 from 'web3';
 import { WalletsService } from './wallets.service';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class TransactionsService {
+  private readonly logger = new Logger(TransactionsService.name);
   constructor(
-    protected readonly neo4jService: Neo4jService,
     @InjectRepository(Transaction)
-    private transactionRepository: Repository<Transaction>,
-    @Inject(WalletsService)
-    private readonly walletService: WalletsService,
+    private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(ConvertedTransaction)
+    private readonly convertedTransRepository: Repository<ConvertedTransaction>,
+    private readonly dataSource: DataSource,
+    protected readonly neo4jService: Neo4jService,
     private readonly httpService: HttpService,
+    private readonly walletService: WalletsService,
   ) {}
+
+  // TODO: use DTO type
+  async createAndConvert(createDto: Transaction) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const transactionResponse = await queryRunner.manager.save(
+        Transaction,
+        createDto,
+      );
+      const convTransactionResponse = await queryRunner.manager.save(
+        ConvertedTransaction,
+        {
+          transactionId: transactionResponse.id,
+        },
+      );
+      console.log('Saved transactionResponse id', transactionResponse.id);
+      console.log(
+        'Saved convTransactionResponse id',
+        convTransactionResponse.transactionId,
+      );
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      this.logger.error(err);
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async convertMany(ids: number[]) {
+    const convertedTrans = this.convertedTransRepository.create(
+      ids.map((id) => ({ transactionId: id })),
+    );
+    return this.convertedTransRepository.save(convertedTrans);
+  }
+
+  // TODO: use DTO type
+  create(createDto: Transaction) {
+    this.transactionRepository.save(createDto);
+  }
+
+  findAll() {
+    return this.transactionRepository.find();
+  }
+
+  async findWithConverted(needConverted: boolean) {
+    const query = this.dataSource
+      .createQueryBuilder(Transaction, 't')
+      .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
+      .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`);
+    this.logger.log(`query ${query.getSql()}`);
+    const result = await query.getMany();
+    return result;
+  }
 
   async crawlWallet() {
     const REST_ENDPIONT =
