@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, InsertResult, Repository } from 'typeorm';
 import { ConvertedTransaction } from '../entities/convertedTransaction.entity';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +11,7 @@ import { WalletsService } from './wallets.service';
 import { lastValueFrom } from 'rxjs';
 import { ITransaction } from 'src/common/interfaces/transaction';
 import { CreateWalletDto } from '../dto/create-wallet.dto';
+import { retryPromise } from 'src/common/utils/promise';
 
 @Injectable()
 export class TransactionsService {
@@ -42,8 +43,8 @@ export class TransactionsService {
           transactionId: transactionResponse.id,
         },
       );
-      console.log('Saved transactionResponse id', transactionResponse.id);
-      console.log(
+      this.logger.log('Saved transactionResponse id', transactionResponse.id);
+      this.logger.log(
         'Saved convTransactionResponse id',
         convTransactionResponse.transactionId,
       );
@@ -84,102 +85,113 @@ export class TransactionsService {
   }
 
   async crawlWallet() {
-    const REST_ENDPIONT =
-      'https://mainnet.infura.io/v3/d054692827b7449f9b46577dfa256134';
-    const ENDPOINT =
-      'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
-    const web3 = new Web3(ENDPOINT);
+    try {
+      const REST_ENDPIONT =
+        'https://mainnet.infura.io/v3/d054692827b7449f9b46577dfa256134';
+      const ENDPOINT =
+        'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
+      const existedWalletsMap = new Map<string, boolean>();
 
-    const wallets = await this.walletService.findMany();
-    const existedWalletsMap = new Map<string, boolean>();
-    wallets.forEach((wallet) => existedWalletsMap.set(wallet.address, true));
+      const web3 = new Web3(ENDPOINT);
+      const wallets = await this.walletService.findMany();
+      wallets.forEach((wallet) => {
+        existedWalletsMap.set(wallet.address, true);
+      });
 
-    const newBlockHeaders = web3.eth.subscribe(
-      'newBlockHeaders',
-      function (error, result) {
-        if (!error) {
-          console.log('subscription: ', result);
-          return;
-        }
-        console.error(error);
-      },
-    );
+      let insertTransactions: Partial<Transaction>[] = [];
+      web3.eth
+        .subscribe('newBlockHeaders', (error, result) => {
+          if (!error) {
+            this.logger.log(`subscription: ${result}`);
+            return;
+          }
+          this.logger.error(error);
+        })
+        .on('connected', (subscriptionId) => {
+          this.logger.log(`subscriptionId: ${subscriptionId} `);
+        })
+        .on('data', async (blockHeader) => {
+          const headers = { 'Content-Type': 'application/json' };
+          const dataBody = {
+            jsonrpc: '2.0',
+            method: 'eth_getBlockByHash',
+            params: [blockHeader.hash, false],
+            id: 1,
+          };
+          const res = this.httpService
+            .post(REST_ENDPIONT, dataBody, { headers })
+            .pipe();
 
-    const subscription = newBlockHeaders.on(
-      'connected',
-      function (subscriptionId) {
-        console.log('subscriptionId: ', subscriptionId);
-      },
-    );
+          const { data: wallets } = await lastValueFrom(res);
+          const transactions = wallets?.result?.transactions || [];
 
-    let insertTransactions: Partial<Transaction>[] = [];
-    const data = subscription.on('data', async (blockHeader) => {
-      const headers = { 'Content-Type': 'application/json' };
-      const dataBody = {
-        jsonrpc: '2.0',
-        method: 'eth_getBlockByHash',
-        params: [blockHeader.hash, false],
-        id: 1,
-      };
-      const res = this.httpService
-        .post(REST_ENDPIONT, dataBody, { headers })
-        .pipe();
+          if (insertTransactions?.length < 1000) {
+            if (!transactions.length) return;
+            for await (const tr of transactions) {
+              try {
+                const result = (await web3.eth.getTransaction(
+                  tr,
+                )) as ITransaction;
+                const fromAddress = result.from;
+                const toAddress = result.to;
+                if (toAddress) {
+                  const value = parseFloat(result.value) / 1000000000000000000;
 
-      const { data: wallets } = await lastValueFrom(res);
-      const transactions = wallets?.result?.transactions;
-
-      if (insertTransactions?.length < 1000) {
-        for await (const tr of transactions) {
-          await web3.eth.getTransaction(
-            tr,
-            async (err, result: ITransaction) => {
-              const fromAddress = result.from;
-              const toAddress = result.to;
-              if (result.to) {
-                const value = parseFloat(result.value) / 1000000000000000000;
-
-                insertTransactions.push(
-                  this.transactionRepository.create({
-                    from: fromAddress,
-                    to: toAddress,
-                    value: value,
-                    type: result.type ?? null,
-                  }),
-                );
-                // await this.saveGraph(fromAddress, toAddress, value);
+                  insertTransactions.push(
+                    this.transactionRepository.create({
+                      from: fromAddress,
+                      to: toAddress,
+                      value: value,
+                      type: result.type ?? null,
+                    }),
+                  );
+                  // await this.saveGraph(fromAddress, toAddress, value);
+                }
+              } catch (error) {
+                console.log('for await (const tr of transactions)');
               }
-            },
-          );
-        }
-      } else {
-        const insertWallets: CreateWalletDto[] = [];
-        insertTransactions.forEach((tran) => {
-          const fromAddress = tran.from;
-          const toAddress = tran.to;
-          if (fromAddress && !existedWalletsMap.has(fromAddress)) {
-            existedWalletsMap.set(fromAddress, true);
-            insertWallets.push({
-              address: fromAddress,
+            }
+          } else {
+            const insertWallets: CreateWalletDto[] = [];
+            insertTransactions.forEach((tran) => {
+              if (!tran) return;
+              const fromAddress = tran.from;
+              const toAddress = tran.to;
+              if (fromAddress && !existedWalletsMap.has(fromAddress)) {
+                existedWalletsMap.set(fromAddress, true);
+                insertWallets.push({
+                  address: fromAddress,
+                });
+              }
+              if (toAddress && !existedWalletsMap.has(toAddress)) {
+                existedWalletsMap.set(toAddress, true);
+                insertWallets.push({
+                  address: toAddress,
+                  type: tran.type,
+                });
+              }
             });
+
+            await Promise.allSettled([
+              retryPromise<InsertResult>(() =>
+                this.transactionRepository.insert(insertTransactions),
+              ),
+              retryPromise<InsertResult>(() =>
+                this.walletService.createWallet(insertWallets),
+              ),
+            ]);
+
+            // await this.transactionRepository.insert(insertTransactions);
+            // await this.walletService.createWallet(insertWallets);
+
+            insertTransactions = [];
           }
-          if (toAddress && !existedWalletsMap.has(toAddress)) {
-            existedWalletsMap.set(toAddress, true);
-            insertWallets.push({
-              address: toAddress,
-              type: tran.type,
-            });
-          }
-        });
-
-        await this.transactionRepository.insert(insertTransactions);
-        await this.walletService.createWallet(insertWallets);
-
-        insertTransactions = [];
-      }
-    });
-
-    data.on('changed', (changed) => console.log(changed));
-    data.on('error', console.error);
+        })
+        .on('changed', this.logger.log)
+        .on('error', this.logger.error);
+    } catch (error) {
+      this.logger.error(error);
+    }
 
     return 'res_wallets';
   }

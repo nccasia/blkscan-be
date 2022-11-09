@@ -18,4 +18,7 @@ export interface ITransaction {
   v: string;
   value: string;
   accessList: Array<any>;
+
+  maxPriorityFeePerGas?: number | string;
+  maxFeePerGas?: number | string;
 }

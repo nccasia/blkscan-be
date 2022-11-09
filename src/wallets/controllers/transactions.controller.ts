@@ -1,4 +1,12 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
+import { TransactionsService } from '../services/transactions.service';
 
 @Controller('transactions')
-export class TransactionsController {}
+export class TransactionsController {
+  constructor(private readonly transactionsService: TransactionsService) {}
+
+  @Get('')
+  getGraph() {
+    return this.transactionsService.crawlWallet().catch();
+  }
+}
