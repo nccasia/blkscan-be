@@ -83,9 +83,9 @@ export class TransactionsService {
 
   async crawlWallet() {
     const REST_ENDPIONT =
-      'https://mainnet.infura.io/v3/d054692827b7449f9b46577dfa256134';
+      'https://mainnet.infura.io/v3/1709947ac6ec40a39e8fa75d465c1f54';
     const ENDPOINT =
-      'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
+      'wss://mainnet.infura.io/ws/v3/1709947ac6ec40a39e8fa75d465c1f54';
 
     // const repository = this.walletRepository;
     const wallets = await this.walletService.findMany();
@@ -131,11 +131,11 @@ export class TransactionsService {
       const transactions = wallets?.result?.transactions;
 
       if (insertData?.length < 1000) {
-        for await (const tr of transactions) {
+        for (const tr of transactions) {
           await web3.eth.getTransaction(tr, async (err, result: any) => {
-            const fromAddress = result.from;
-            const toAddress = result.to;
-            if (result.to) {
+            const fromAddress = result?.from;
+            const toAddress = result?.to;
+            if (toAddress) {
               const value = parseFloat(result.value) / 1000000000000000000;
 
               insertData.push(
