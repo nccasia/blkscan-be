@@ -1,3 +1,4 @@
+import { TransactionType } from 'src/common/interfaces/transaction';
 import {
   Column,
   Entity,
@@ -24,6 +25,9 @@ export class Transaction {
 
   @Column({ type: 'float' })
   value: number;
+
+  @Column({ nullable: true })
+  type: TransactionType;
 
   @UpdateDateColumn({
     type: 'timestamp with time zone',
