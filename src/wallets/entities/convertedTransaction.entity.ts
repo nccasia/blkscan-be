@@ -8,7 +8,7 @@ import {
   PrimaryColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Transaction } from './trans.entity';
+import { Transaction } from './transaction.entity';
 
 @Entity('convertedTransactions')
 export class ConvertedTransaction {

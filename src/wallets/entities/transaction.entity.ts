@@ -1,12 +1,4 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToMany,
-  OneToOne,
-  PrimaryColumn,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { ConvertedTransaction } from './convertedTransaction.entity';
 
 @Entity('transactions')
@@ -15,12 +7,20 @@ export class Transaction {
     Object.assign(this, partial);
   }
 
-  // @PrimaryColumn()
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: true })
-  desc: string;
+  @Column()
+  from: string;
+
+  @Column()
+  to: string;
+
+  @Column({ type: 'float' })
+  value: number;
+
+  @Column({ nullable: true, type: 'bigint' })
+  lastUpdate: number;
 
   @OneToOne(
     () => ConvertedTransaction,

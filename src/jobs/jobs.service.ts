@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { TransactionsService } from 'src/wallets/services/transactions.service';
 import { WalletsService } from 'src/wallets/services/wallets.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { TransactionsService } from 'src/wallets/services/transactions.service';
 
 @Injectable()
 export class JobsService implements OnApplicationBootstrap {
@@ -17,7 +17,7 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   crawlWallet() {
-    return this.walletsService.crawlWallet();
+    return this.transactionsService.crawlWallet();
   }
 
   @Cron(CronExpression.EVERY_2_HOURS, { timeZone: 'Asia/Ho_Chi_Minh' })
