@@ -13,9 +13,7 @@ export class JobsService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.logger.log(`onApplicationBootstrap`);
-    this.crawlWallet().catch((err) => {
-      console.log('err');
-    });
+    this.crawlWallet();
   }
 
   crawlWallet() {
@@ -23,7 +21,7 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
-  @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  // @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
     const res = await this.transactionsService.findWithConverted(false);
     console.log('findWithConverted false', res);

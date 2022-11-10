@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { configEnvPath } from './common/helper/env.helper';
 import { TypeOrmConfigSerivce } from './common/typeorm/typeorm.service';
 import { Neo4jModule } from '@nhogs/nestjs-neo4j';
@@ -85,7 +83,5 @@ import { ScheduleModule } from '@nestjs/schedule';
     JobsModule,
     WalletsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
