@@ -12,6 +12,8 @@ import { lastValueFrom } from 'rxjs';
 import { ITransaction } from 'src/common/interfaces/transaction';
 import { CreateWalletDto } from '../dto/create-wallet.dto';
 import { retryPromise } from 'src/common/utils/promise';
+import { ConfigService } from '@nestjs/config';
+import { sleep } from 'src/common/utils/sleep';
 
 @Injectable()
 export class TransactionsService {
@@ -25,6 +27,7 @@ export class TransactionsService {
     protected readonly neo4jService: Neo4jService,
     private readonly httpService: HttpService,
     private readonly walletService: WalletsService,
+    private readonly configService: ConfigService,
   ) {}
 
   // TODO: use DTO type
@@ -86,10 +89,11 @@ export class TransactionsService {
 
   async crawlWallet() {
     try {
-      const REST_ENDPIONT =
-        'https://mainnet.infura.io/v3/d054692827b7449f9b46577dfa256134';
-      const ENDPOINT =
-        'wss://mainnet.infura.io/ws/v3/d054692827b7449f9b46577dfa256134';
+      const apiKey =
+        this.configService.get<string>('INFURA_API_KEY') ||
+        'd054692827b7449f9b46577dfa256134';
+      const REST_ENDPIONT = 'https://mainnet.infura.io/v3/' + apiKey;
+      const ENDPOINT = 'wss://mainnet.infura.io/ws/v3/' + apiKey;
       const existedWalletsMap = new Map<string, boolean>();
 
       const web3 = new Web3(ENDPOINT);
@@ -102,7 +106,9 @@ export class TransactionsService {
       web3.eth
         .subscribe('newBlockHeaders', (error, result) => {
           if (!error) {
-            this.logger.log(`subscription: ${result}`);
+            this.logger.log(
+              `subscription #${result.number}: hash ${result.hash}`,
+            );
             return;
           }
           this.logger.error(error);
@@ -127,7 +133,7 @@ export class TransactionsService {
 
           if (insertTransactions?.length < 1000) {
             if (!transactions.length) return;
-            for await (const tr of transactions) {
+            for (const tr of transactions) {
               try {
                 const result = (await web3.eth.getTransaction(
                   tr,
@@ -147,8 +153,15 @@ export class TransactionsService {
                   );
                   // await this.saveGraph(fromAddress, toAddress, value);
                 }
+                await sleep(1000);
               } catch (error) {
-                console.log('for await (const tr of transactions)');
+                console.log(
+                  'for (const tr of transactions)',
+                  error?.code,
+                  error?.statusCode,
+                  error?.message,
+                  error?.data,
+                );
               }
             }
           } else {
@@ -180,10 +193,8 @@ export class TransactionsService {
                 this.walletService.createWallet(insertWallets),
               ),
             ]);
-
             // await this.transactionRepository.insert(insertTransactions);
             // await this.walletService.createWallet(insertWallets);
-
             insertTransactions = [];
           }
         })

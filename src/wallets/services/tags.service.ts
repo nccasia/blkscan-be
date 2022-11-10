@@ -19,7 +19,7 @@ export class TagsService {
     @Inject(WalletsService)
     private readonly walletService: WalletsService,
     private readonly httpService: HttpService,
-    private configService: ConfigService,
+    private readonly configService: ConfigService,
   ) {}
 
   async saveTags() {
