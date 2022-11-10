@@ -94,7 +94,7 @@ export class TransactionsService {
     return this.isCrawls;
   }
 
-  async crawlsWallet() {
+  async crawlsTransactions() {
     try {
       this.isCrawls = true;
       if (!this.isCrawls) return this.isCrawls;

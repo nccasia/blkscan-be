@@ -13,16 +13,16 @@ export class JobsService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.logger.log(`onApplicationBootstrap`);
-    this.crawlsWallet();
+    this.crawlsTransactions();
   }
 
   // @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Ho_Chi_Minh' })
   @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
-  crawlsWallet() {
+  crawlsTransactions() {
     const isCrawls = this.transactionsService.getCrawls();
     if (!isCrawls) {
-      this.logger.log(`start crawlsWallet by cron job`);
-      this.transactionsService.crawlsWallet().catch(this.logger.error);
+      this.logger.log(`start crawlsWallet`);
+      this.transactionsService.crawlsTransactions().catch(this.logger.error);
     }
     this.logger.log(`isCrawls ${isCrawls}`);
   }
