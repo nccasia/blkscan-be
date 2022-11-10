@@ -7,6 +7,7 @@ export class TransactionsController {
 
   @Get('')
   getGraph() {
-    return this.transactionsService.crawlWallet().catch();
+    return 'abc';
+    // return this.transactionsService.crawlWallet().catch();
   }
 }

@@ -13,11 +13,18 @@ export class JobsService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.logger.log(`onApplicationBootstrap`);
-    this.crawlWallet();
+    this.crawlsTransactions();
   }
 
-  crawlWallet() {
-    return this.transactionsService.crawlWallet();
+  // @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Ho_Chi_Minh' })
+  @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  crawlsTransactions() {
+    const isCrawls = this.transactionsService.getCrawls();
+    if (!isCrawls) {
+      this.logger.log(`start crawlsWallet`);
+      this.transactionsService.crawlsTransactions().catch(this.logger.error);
+    }
+    this.logger.log(`isCrawls ${isCrawls}`);
   }
 
   // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })

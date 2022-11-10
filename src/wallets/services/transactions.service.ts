@@ -14,10 +14,13 @@ import { CreateWalletDto } from '../dto/create-wallet.dto';
 import { retryPromise } from 'src/common/utils/promise';
 import { ConfigService } from '@nestjs/config';
 import { sleep } from 'src/common/utils/sleep';
+import { BlockHeader } from 'web3-eth';
+import { Subscription } from 'web3-core-subscriptions';
 
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
+  private isCrawls = false;
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
@@ -87,8 +90,15 @@ export class TransactionsService {
     return result;
   }
 
-  async crawlWallet() {
+  getCrawls() {
+    return this.isCrawls;
+  }
+
+  async crawlsTransactions() {
     try {
+      this.isCrawls = true;
+      if (!this.isCrawls) return this.isCrawls;
+
       const apiKey =
         this.configService.get<string>('INFURA_API_KEY') ||
         'd054692827b7449f9b46577dfa256134';
@@ -103,16 +113,22 @@ export class TransactionsService {
       });
 
       let insertTransactions: Partial<Transaction>[] = [];
-      web3.eth
-        .subscribe('newBlockHeaders', (error, result) => {
+      const subscription: Subscription<BlockHeader> = web3.eth.subscribe(
+        'newBlockHeaders',
+        (error, blockHeader) => {
           if (!error) {
             this.logger.log(
-              `subscription #${result.number}: hash ${result.hash}`,
+              `subscription #${blockHeader?.number}: hash ${
+                blockHeader?.hash
+              } parent ..${blockHeader?.parentHash?.slice(-6)}`,
             );
             return;
           }
           this.logger.error(error);
-        })
+        },
+      );
+
+      subscription
         .on('connected', (subscriptionId) => {
           this.logger.log(`subscriptionId: ${subscriptionId} `);
         })
@@ -128,16 +144,33 @@ export class TransactionsService {
             .post(REST_ENDPIONT, dataBody, { headers })
             .pipe();
 
-          const { data: wallets } = await lastValueFrom(res);
+          const { data: wallets } = await lastValueFrom(res).catch(
+            async (error) => {
+              await this.stopCrawlsLogError(
+                'lastValueFrom',
+                error,
+                subscription,
+              );
+              throw error;
+              // return { data: null };
+            },
+          );
           const transactions = wallets?.result?.transactions || [];
 
           if (insertTransactions?.length < 1000) {
             if (!transactions.length) return;
-            for (const tr of transactions) {
+            for (const tx of transactions) {
               try {
-                const result = (await web3.eth.getTransaction(
-                  tr,
-                )) as ITransaction;
+                const result = (await web3.eth
+                  .getTransaction(tx)
+                  .catch(async (error) => {
+                    await this.stopCrawlsLogError(
+                      'getTransaction',
+                      error,
+                      subscription,
+                    );
+                  })) as ITransaction;
+                if (!result) return;
                 const fromAddress = result.from;
                 const toAddress = result.to;
                 if (toAddress) {
@@ -155,21 +188,19 @@ export class TransactionsService {
                 }
                 await sleep(1000);
               } catch (error) {
-                console.log(
+                await this.stopCrawlsLogError(
                   'for (const tr of transactions)',
-                  error?.code,
-                  error?.statusCode,
-                  error?.message,
-                  error?.data,
+                  error,
+                  subscription,
                 );
               }
             }
           } else {
             const insertWallets: CreateWalletDto[] = [];
-            insertTransactions.forEach((tran) => {
-              if (!tran) return;
-              const fromAddress = tran.from;
-              const toAddress = tran.to;
+            insertTransactions.forEach((tx) => {
+              if (!tx) return;
+              const fromAddress = tx.from;
+              const toAddress = tx.to;
               if (fromAddress && !existedWalletsMap.has(fromAddress)) {
                 existedWalletsMap.set(fromAddress, true);
                 insertWallets.push({
@@ -180,7 +211,7 @@ export class TransactionsService {
                 existedWalletsMap.set(toAddress, true);
                 insertWallets.push({
                   address: toAddress,
-                  type: tran.type,
+                  type: tx.type,
                 });
               }
             });
@@ -201,9 +232,44 @@ export class TransactionsService {
         .on('changed', this.logger.log)
         .on('error', this.logger.error);
     } catch (error) {
-      this.logger.error(error);
+      await this.stopCrawlsLogError('crawlWallet', error, null);
     }
 
     return 'res_wallets';
+  }
+
+  async stopCrawlsLogError(
+    key: string,
+    error: any,
+    subscription: Subscription<BlockHeader> | null,
+  ) {
+    console.log(
+      key,
+      'code=',
+      error?.code,
+      'statusCode=',
+      error?.statusCode,
+      'name=',
+      error?.name,
+      'message=',
+      error?.message,
+      'data',
+      error?.data,
+    );
+    if (
+      subscription &&
+      error &&
+      error.message?.includes(
+        'daily request count exceeded, request rate limited',
+      )
+    ) {
+      await subscription.unsubscribe((err, isSuccess) => {
+        if (isSuccess) {
+          console.log(key, 'success unsubscribe');
+          this.isCrawls = false;
+          return;
+        }
+      });
+    }
   }
 }
