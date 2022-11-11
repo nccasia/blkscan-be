@@ -84,7 +84,8 @@ export class TransactionsService {
     const query = this.dataSource
       .createQueryBuilder(Transaction, 't')
       .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
-      .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`);
+      .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`)
+      .limit(1000);
     this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
     return result;
