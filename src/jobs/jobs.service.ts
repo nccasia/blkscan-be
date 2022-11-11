@@ -16,7 +16,7 @@ export class JobsService implements OnApplicationBootstrap {
     this.crawlsTransactions();
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Ho_Chi_Minh' })
+  // this cron just for testing
   // @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   crawlsTransactions() {
     const isCrawls = this.transactionsService.getCrawls();
@@ -31,7 +31,7 @@ export class JobsService implements OnApplicationBootstrap {
   //@Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
     const res = await this.transactionsService.findWithConverted(false);
-    console.log('findWithConverted false', res);
+    console.log('findWithConverted false', res.length);
     const ids = res.map((t) => t.id);
 
     for (const rs of res) {
