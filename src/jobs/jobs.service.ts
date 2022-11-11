@@ -31,7 +31,7 @@ export class JobsService implements OnApplicationBootstrap {
   //@Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
     const res = await this.transactionsService.findWithConverted(false);
-    console.log('findWithConverted false', res);
+    console.log('findWithConverted false', res.length);
     const ids = res.map((t) => t.id);
 
     for (const rs of res) {
