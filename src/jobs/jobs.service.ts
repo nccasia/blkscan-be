@@ -16,7 +16,7 @@ export class JobsService implements OnApplicationBootstrap {
     this.crawlsTransactions();
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Ho_Chi_Minh' })
+  // this cron just for testing
   // @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   crawlsTransactions() {
     const isCrawls = this.transactionsService.getCrawls();
