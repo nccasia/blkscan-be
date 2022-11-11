@@ -16,8 +16,8 @@ export class JobsService implements OnApplicationBootstrap {
     this.crawlsTransactions();
   }
 
-  // @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Ho_Chi_Minh' })
-  @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  @Cron(CronExpression.EVERY_DAY_AT_1AM, { timeZone: 'Asia/Ho_Chi_Minh' })
+  // @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   crawlsTransactions() {
     const isCrawls = this.transactionsService.getCrawls();
     if (!isCrawls) {
@@ -27,8 +27,8 @@ export class JobsService implements OnApplicationBootstrap {
     this.logger.log(`isCrawls ${isCrawls}`);
   }
 
-  // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
-  // @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
+  @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  //@Cron(CronExpression.EVERY_10_SECONDS, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
     const res = await this.transactionsService.findWithConverted(false);
     console.log('findWithConverted false', res);
