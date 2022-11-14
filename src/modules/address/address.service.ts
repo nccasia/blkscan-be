@@ -74,8 +74,8 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.start.properties.totalValue?.low
           ? d.p.start.properties.totalValue?.low
           : d.p.start.properties.totalValue?.low === 0
-          ? 0
-          : d.p.start.properties.totalValue,
+            ? 0
+            : d.p.start.properties.totalValue,
       };
 
       const endNode = {
@@ -83,8 +83,8 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.end.properties.totalValue?.low
           ? d.p.end.properties.totalValue?.low
           : d.p.end.properties.totalValue?.low === 0
-          ? 0
-          : d.p.end.properties.totalValue,
+            ? 0
+            : d.p.end.properties.totalValue,
       };
       return [startNode, endNode];
     });
@@ -115,8 +115,8 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.start.properties.totalValue?.low
           ? d.p.start.properties.totalValue?.low
           : d.p.start.properties.totalValue?.low === 0
-          ? 0
-          : d.p.start.properties.totalValue,
+            ? 0
+            : d.p.start.properties.totalValue,
       };
 
       const endNode = {
@@ -124,8 +124,8 @@ export class AddressService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.end.properties.totalValue?.low
           ? d.p.end.properties.totalValue?.low
           : d.p.end.properties.totalValue?.low === 0
-          ? 0
-          : d.p.end.properties.totalValue,
+            ? 0
+            : d.p.end.properties.totalValue,
       };
       return [startNode, endNode];
     });
