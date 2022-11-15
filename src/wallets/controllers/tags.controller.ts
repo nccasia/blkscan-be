@@ -17,12 +17,12 @@ export class TagsController {
 
   @Post('save-all-tags')
   getDetailWallet() {
-    return this.tagsService.saveTags();
+    return this.tagsService.saveTagsByAllWallets();
   }
 
   @Post('save-from-wallet')
-  saveTagsFromAddres(@Body('address') address: string) {
-    return this.tagsService.saveTagsFromAddres(address);
+  saveTagsFromAddress(@Body('address') address: string) {
+    return this.tagsService.saveTagsFromAddress(address);
   }
 
   @Post('create-new-tag')

@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { sleep } from 'src/common/utils/sleep';
 import { BlockHeader } from 'web3-eth';
 import { Subscription } from 'web3-core-subscriptions';
+import { TagsService } from './tags.service';
 
 @Injectable()
 export class TransactionsService {
@@ -30,6 +31,7 @@ export class TransactionsService {
     protected readonly neo4jService: Neo4jService,
     private readonly httpService: HttpService,
     private readonly walletService: WalletsService,
+    private readonly tagsService: TagsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -158,7 +160,7 @@ export class TransactionsService {
           );
           const transactions = wallets?.result?.transactions || [];
 
-          if (insertTransactions?.length < 1000) {
+          if (insertTransactions?.length < 800) {
             if (!transactions.length) return;
             for (const tx of transactions) {
               try {
@@ -175,7 +177,12 @@ export class TransactionsService {
                 const fromAddress = result.from;
                 const toAddress = result.to;
                 if (toAddress) {
-                  const value = parseFloat(result.value) / 1000000000000000000;
+                  const value = +web3.utils.fromWei(result.value, 'ether');
+                  // const value2 = parseFloat(result.value) / 1000000000000000000;
+                  // const bn = web3.utils.toBN(result.value);
+                  // console.log('value1', value);
+                  // console.log('value2', value2);
+                  // console.log('value2 comp', value2 == value);
 
                   insertTransactions.push(
                     this.transactionRepository.create({
@@ -223,6 +230,11 @@ export class TransactionsService {
               ),
               retryPromise<InsertResult>(() =>
                 this.walletService.createWallet(insertWallets),
+              ),
+              retryPromise<boolean>(() =>
+                this.tagsService.saveTags(
+                  insertWallets.map((wallet) => wallet.address),
+                ),
               ),
             ]);
             // await this.transactionRepository.insert(insertTransactions);

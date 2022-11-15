@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { CreateTagDto } from '../dto/create-tag.dto';
 import { UpdateTagDto } from '../dto/update-tag.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +13,7 @@ import { sleep } from 'src/common/utils/sleep';
 
 @Injectable()
 export class TagsService {
+  private readonly logger = new Logger(TagsService.name);
   constructor(
     @InjectRepository(Tag)
     private readonly tagRepository: Repository<Tag>,
@@ -22,43 +23,60 @@ export class TagsService {
     private readonly configService: ConfigService,
   ) {}
 
-  async saveTags() {
-    const timeToUpdate = 180 * 2592000; // six month
-    const now = new Date();
-    const lst = await this.walletService.findMany();
-
-    // const listWallet = lst;
-    const listWallet = lst.filter(
-      (w) => !w.lastUpdate || now.getTime() - w.lastUpdate > timeToUpdate,
-    );
-    console.log('🚀listWallet', lst.length, listWallet.length, listWallet[0]);
-    const batchSize = 3;
-
-    for (let i = 0; i < listWallet.length; i += batchSize) {
-      console.log('🚀 i', i);
-      const tempList = listWallet.slice(i, i + batchSize);
-      const res = await Promise.allSettled(
-        tempList.map(async (wallet) =>
-          this.saveTagsAndWallet(wallet.address, now),
-        ),
-      );
-      const errors = res.filter((o) => o.status === 'rejected');
-      console.log('🚀 errors', errors.length, errors[0]);
-      await sleep(3000);
-    }
-    // for (let i = 0; i < listWallet.length; i++) {
-    //   const wallet = listWallet[i];
-    //   const singleAddress = wallet.address;
-    //   await this.saveTagFromAddres(singleAddress);
-    //   await this.walletService.update(singleAddress, {
-    //     lastUpdate: new Date().getTime(),
-    //   });
+  async saveTagsByAllWallets() {
+    // const timeToUpdate = 180 * 2592000; // six month
+    // const now = new Date();
+    // const lst = await this.walletService.findMany();
+    // // const listWallet = lst;
+    // const listWallet = lst.filter(
+    //   (w) => !w.lastUpdate || now.getTime() - w.lastUpdate > timeToUpdate,
+    // );
+    // console.log('🚀listWallet', lst.length, listWallet.length, listWallet[0]);
+    // const batchSize = 3;
+    // for (let i = 0; i < listWallet.length; i += batchSize) {
+    //   console.log('🚀 i', i);
+    //   const tempList = listWallet.slice(i, i + batchSize);
+    //   const res = await Promise.allSettled(
+    //     tempList.map(async (wallet) =>
+    //       this.saveTagsAndWallet(wallet.address, now),
+    //     ),
+    //   );
+    //   const errors = res.filter((o) => o.status === 'rejected');
+    //   console.log('🚀 errors', errors.length, errors[0]);
+    //   await sleep(3000);
     // }
-
-    return 'results';
+    // // for (let i = 0; i < listWallet.length; i++) {
+    // //   const wallet = listWallet[i];
+    // //   const singleAddress = wallet.address;
+    // //   await this.saveTagFromAddres(singleAddress);
+    // //   await this.walletService.update(singleAddress, {
+    // //     lastUpdate: new Date().getTime(),
+    // //   });
+    // // }
+    return true;
   }
 
-  async saveTagsFromAddres(address: string) {
+  async saveTags(walletAddresses: string[]) {
+    const now = new Date();
+    const batchSize = 2;
+
+    for (let i = 0; i < walletAddresses.length; i += batchSize) {
+      // console.log('🚀~ i', i);
+      const tempList = walletAddresses.slice(i, i + batchSize);
+      const res = await Promise.allSettled(
+        tempList.map(async (address) => this.saveTagsAndWallet(address, now)),
+      );
+      const errors = res.filter(
+        (o) => o.status === 'rejected',
+      ) as PromiseRejectedResult[];
+      console.log('saveTags errors length', errors.length, errors[0]?.reason);
+      await sleep(2500);
+    }
+
+    return true;
+  }
+
+  async saveTagsFromAddress(address: string) {
     const url = this.configService.get<string>('URL_PREFIX') + address;
     try {
       const tagElements = await firstValueFrom(this.getDataFromAddress(url));
@@ -81,22 +99,22 @@ export class TagsService {
         }));
       const tags = this.tagRepository.create(newTags);
       tags && (await this.tagRepository.insert(tags));
-      console.log('🚀 saveTagsFromAddres', tags.length);
+      this.logger.log(`saveTagsFromAddress length ${tags.length}`);
 
       return tags || [];
     } catch (error) {
-      // console.log(error);
-      console.log('saveTagFromAddres', url);
+      // console.error(error);
+      this.logger.error(`saveTagFromAddres url error ${url}`);
       throw error;
     }
   }
 
   async saveTagsAndWallet(address: string, date: Date) {
-    const tags = await this.saveTagsFromAddres(address);
-    tags.length &&
-      (await this.walletService.updateWallet(address, {
-        updatedAt: date,
-      }));
+    const tags = await this.saveTagsFromAddress(address);
+    // tags.length &&
+    //   (await this.walletService.updateWallet(address, {
+    //     updatedAt: date,
+    //   }));
   }
 
   getDataFromAddress(URL: string): Observable<string[]> {
