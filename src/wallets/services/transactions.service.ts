@@ -100,12 +100,11 @@ export class TransactionsService {
       this.isCrawls = true;
       if (!this.isCrawls) return this.isCrawls;
 
-      const REST_WEB3_URL = this.configService.get<string>('REST_WEB3_URL');
-      const WEB3_URL = this.configService.get<string>('WEB3_URL');
-      // const apiKey =
-      //   this.configService.get<string>('INFURA_API_KEY');
-      // const REST_WEB3_URL = 'https://mainnet.infura.io/v3/' + apiKey;
-      // const WEB3_URL = 'wss://mainnet.infura.io/ws/v3/' + apiKey;
+      // const REST_WEB3_URL = this.configService.get<string>('REST_WEB3_URL');
+      // const WEB3_URL = this.configService.get<string>('WEB3_URL');
+      const apiKey = this.configService.get<string>('INFURA_API_KEY');
+      const REST_WEB3_URL = 'https://mainnet.infura.io/v3/' + apiKey;
+      const WEB3_URL = 'wss://mainnet.infura.io/ws/v3/' + apiKey;
       const existedWalletsMap = new Map<string, boolean>();
 
       const web3 = new Web3(WEB3_URL);
@@ -258,20 +257,20 @@ export class TransactionsService {
       'data',
       error?.data,
     );
-    // if (
-    //   subscription &&
-    //   error &&
-    //   error.message?.includes(
-    //     'daily request count exceeded, request rate limited',
-    //   )
-    // ) {
-    //   await subscription.unsubscribe((err, isSuccess) => {
-    //     if (isSuccess) {
-    //       console.log(key, 'success unsubscribe');
-    //       this.isCrawls = false;
-    //       return;
-    //     }
-    //   });
-    // }
+    if (
+      subscription &&
+      error &&
+      error.message?.includes(
+        'daily request count exceeded, request rate limited',
+      )
+    ) {
+      await subscription.unsubscribe((err, isSuccess) => {
+        if (isSuccess) {
+          console.log(key, 'success unsubscribe');
+          this.isCrawls = false;
+          return;
+        }
+      });
+    }
   }
 }
