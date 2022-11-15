@@ -1,0 +1,40 @@
+interface Send {
+  value: Float
+}
+
+type Address {
+  address: ID!
+  totalValue: Float
+  desc: String
+}
+type Node {
+id: String
+totalValue: Float
+}
+type Link {
+  source: String
+  target: String
+}
+
+type Graph {
+  nodes: [Node]
+  links: [Link]
+}
+
+
+input CreateAddressInput {
+  address: String
+  totalValue: Float
+  desc: String
+}
+
+type Query {
+  getAddresses: [Address]
+  getAddress(address: ID!): Address
+  getGraph(limit: Int): Graph
+  searchGraph(id: ID!): Graph
+}
+
+type Mutation {
+  createAddress(createAddressInput: CreateAddressInput): Address
+}

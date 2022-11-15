@@ -6,27 +6,34 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
-@Catch(HttpException)
+@Catch()
 export class HttpExceptionFilter<T extends HttpException>
   implements ExceptionFilter
 {
   catch(exception: T, host: ArgumentsHost) {
+    console.log('🚀 exception');
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+    try {
+      const status = exception.getStatus();
+      const exceoptionResponse = exception.getResponse();
 
-    const status = exception.getStatus();
-    const exceoptionResponse = exception.getResponse();
+      const error =
+        typeof response === 'string'
+          ? { message: exceoptionResponse }
+          : (exceoptionResponse as object);
 
-    const error =
-      typeof response === 'string'
-        ? { message: exceoptionResponse }
-        : (exceoptionResponse as object);
-
-    return response.status(status).json({
-      ...error,
-      timestamp: new Date().toISOString(),
-      path: request.path,
-    });
+      return response.status(status).json({
+        ...error,
+        timestamp: new Date().toISOString(),
+        path: request.path,
+      });
+    } catch (error) {
+      return response.status(500).json({
+        timestamp: new Date().toISOString(),
+        path: request.path,
+      });
+    }
   }
 }
