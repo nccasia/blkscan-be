@@ -1,0 +1,38 @@
+import { Tag } from 'src/wallets/entities/tag.entity';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+@Entity('wallets')
+export class Wallet {
+  constructor(partial: Partial<Wallet>) {
+    Object.assign(this, partial);
+  }
+
+  @PrimaryColumn()
+  address: string;
+
+  @Column({ nullable: true })
+  type: number;
+
+  // TODO: remove this lastUpdate field, use updatedAt instead
+  @Column({ nullable: true, type: 'bigint' })
+  lastUpdate: number;
+
+  @UpdateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'now()',
+    onUpdate: 'now()',
+  })
+  updatedAt: Date;
+
+  @Column({ nullable: true })
+  desc: string;
+
+  @OneToMany(() => Tag, (tag) => tag.wallet)
+  tags: Tag[];
+}

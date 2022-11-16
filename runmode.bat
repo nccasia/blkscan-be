@@ -1,0 +1,1 @@
+geth --syncmode light --http --ws --ws.port 3334

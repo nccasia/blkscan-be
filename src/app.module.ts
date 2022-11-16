@@ -1,31 +1,24 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { TagsModule } from './modules/tags/tags.module';
-import { WalletsModule } from './modules/wallets/wallets.module';
 import { configEnvPath } from './common/helper/env.helper';
-import { TypeOrmConfigSerivce } from './shared/typeorm/typeorm.service';
+import { TypeOrmConfigSerivce } from './common/typeorm/typeorm.service';
 import { Neo4jModule } from '@nhogs/nestjs-neo4j';
 import { Neo4jConfig } from '@nhogs/nestjs-neo4j/dist';
-import { SendModule } from './modules/send/send.module';
-import { AddressModule } from './modules/address/address.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { upperDirectiveTransformer } from './common/directives/upper-case.directive';
 import { join } from 'path';
-// import { Neo4jGraphQL } from '@neo4j/graphql';
 // import { generate, OGM } from '@neo4j/graphql-ogm';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-// import { readFileSync } from 'fs';
-// import neo4j from 'neo4j-driver';
+import { WalletsModule } from './wallets/wallets.module';
+import { JobsModule } from './jobs/jobs.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot(configEnvPath),
     TypeOrmModule.forRootAsync({ useClass: TypeOrmConfigSerivce }),
-    TagsModule,
-    WalletsModule,
+    ScheduleModule.forRoot(),
     Neo4jModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -47,7 +40,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
       playground: true,
       // plugins: [ApolloServerPluginLandingPageLocalDefault()],
       definitions: {
-        path: join(process.cwd(), 'src/gen/graphql.schema.ts'),
+        path: join(process.cwd(), 'src/graphql.schema.ts'),
         emitTypenameField: true,
         // outputAs: 'class',
       },
@@ -73,7 +66,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
     //     const ogm = new OGM({ typeDefs, driver });
     //     await generate({
     //       ogm,
-    //       outFile: join(process.cwd(), 'src/gen/graphql.schema.ts'),
+    //       outFile: join(process.cwd(), 'src/graphql.schema.ts'),
     //     });
     //     // process.exit(1);
     //     await ogm.init();
@@ -87,10 +80,8 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
     //     };
     //   },
     // }),
-    SendModule,
-    AddressModule,
+    JobsModule,
+    WalletsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

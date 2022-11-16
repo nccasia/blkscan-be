@@ -21,7 +21,7 @@
   },
   "watchOptions": {
     "excludeFiles": [
-      "src/gen/graphql.schema.ts"
+      "src/graphql.schema.ts"
     ]
   }
 }
