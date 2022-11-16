@@ -69,8 +69,13 @@ export class TagsService {
       const errors = res.filter(
         (o) => o.status === 'rejected',
       ) as PromiseRejectedResult[];
-      console.log('saveTags errors length', errors.length, errors[0]?.reason);
-      await sleep(2500);
+      errors.length &&
+        console.error(
+          'saveTags errors.length',
+          errors.length,
+          errors[0]?.reason,
+        );
+      await sleep(600);
     }
 
     return true;
@@ -98,7 +103,7 @@ export class TagsService {
           walletAddress: address,
         }));
       const tags = this.tagRepository.create(newTags);
-      tags && (await this.tagRepository.insert(tags));
+      tags.length && (await this.tagRepository.insert(tags));
       this.logger.log(`saveTagsFromAddress length ${tags.length}`);
 
       return tags || [];

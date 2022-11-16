@@ -87,8 +87,8 @@ export class TransactionsService {
       .createQueryBuilder(Transaction, 't')
       .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
       .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`)
-      .limit(1000);
-    this.logger.log(`query ${query.getSql()}`);
+      .limit(4000);
+    // this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
     return result;
   }
@@ -231,11 +231,11 @@ export class TransactionsService {
               retryPromise<InsertResult>(() =>
                 this.walletService.createWallet(insertWallets),
               ),
-              retryPromise<boolean>(() =>
-                this.tagsService.saveTags(
-                  insertWallets.map((wallet) => wallet.address),
-                ),
-              ),
+              // retryPromise<boolean>(() =>
+              //   this.tagsService.saveTags(
+              //     insertWallets.map((wallet) => wallet.address),
+              //   ),
+              // ),
             ]);
             // await this.transactionRepository.insert(insertTransactions);
             // await this.walletService.createWallet(insertWallets);
