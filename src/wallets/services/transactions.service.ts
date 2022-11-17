@@ -159,7 +159,7 @@ export class TransactionsService {
           );
           const transactions = wallets?.result?.transactions || [];
 
-          if (insertTransactions?.length < 800) {
+          if (insertTransactions?.length < 1000) {
             if (!transactions.length) return;
             for (const tx of transactions) {
               try {
