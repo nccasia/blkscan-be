@@ -63,7 +63,7 @@ export class JobsService implements OnApplicationBootstrap {
     await this.transactionsService.convertMany(convertIds);
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTagsByWallets() {
     console.time(`saveTagsByWallets`);
     const wallets = await this.walletsService.findByHasTag(false, 2200);

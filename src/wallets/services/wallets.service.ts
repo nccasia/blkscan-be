@@ -59,9 +59,11 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
           SET fromAddress.totalValue = fromAddress.totalValue + ${val}
         MERGE (toAddress:Address {address: "${to}"})
         ON CREATE
-          SET toAddress.totalValue = ${val}
+          SET toAddress.totalValue = ${val},
+              toAddress.count = 1
         ON MATCH
-          SET toAddress.totalValue = toAddress.totalValue + ${val}
+          SET toAddress.totalValue = toAddress.totalValue + ${val},
+              toAddress.count = toAddress.count + 1
         MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
         RETURN fromAddress, toAddress`,
       },
@@ -112,21 +114,11 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   }
 
   async searchGraph(id: string, limit: number) {
-    console.log('limit');
-    console.log(limit);
-    console.log('id');
-    console.log(id);
     const queryResult = await this.neo4jService.run({
       cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} where n.address="${id}" OR a.address="${id}" return p`,
     });
 
-    const queryResult1 = await this.neo4jService.run({
-      cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} return p`,
-    });
-
     const data = queryResult.records.map((data) => data.toObject());
-    const data1 = queryResult1.records.map((data) => data.toObject());
-    console.log('data 1', data1);
     const key = 'id';
     const nodes = data.map((d) => {
       const startNode = {
