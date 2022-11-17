@@ -83,8 +83,8 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.start.properties.totalValue?.low
           ? d.p.start.properties.totalValue?.low
           : d.p.start.properties.totalValue?.low === 0
-            ? 0
-            : d.p.start.properties.totalValue,
+          ? 0
+          : d.p.start.properties.totalValue,
       };
 
       const endNode = {
@@ -92,8 +92,8 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.end.properties.totalValue?.low
           ? d.p.end.properties.totalValue?.low
           : d.p.end.properties.totalValue?.low === 0
-            ? 0
-            : d.p.end.properties.totalValue,
+          ? 0
+          : d.p.end.properties.totalValue,
       };
       return [startNode, endNode];
     });
@@ -112,11 +112,10 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   }
 
   async searchGraph(id: string, limit: number) {
-
-    console.log("limit")
-    console.log(limit)
-    console.log("id")
-    console.log(id)
+    console.log('limit');
+    console.log(limit);
+    console.log('id');
+    console.log(id);
     const queryResult = await this.neo4jService.run({
       cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} where n.address="${id}" OR a.address="${id}" return p`,
     });
@@ -125,10 +124,9 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
       cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} return p`,
     });
 
-
     const data = queryResult.records.map((data) => data.toObject());
     const data1 = queryResult1.records.map((data) => data.toObject());
-    console.log("data 1", data1)
+    console.log('data 1', data1);
     const key = 'id';
     const nodes = data.map((d) => {
       const startNode = {
@@ -136,8 +134,8 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.start.properties.totalValue?.low
           ? d.p.start.properties.totalValue?.low
           : d.p.start.properties.totalValue?.low === 0
-            ? 0
-            : d.p.start.properties.totalValue,
+          ? 0
+          : d.p.start.properties.totalValue,
       };
 
       const endNode = {
@@ -145,8 +143,8 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
         totalValue: d.p.end.properties.totalValue?.low
           ? d.p.end.properties.totalValue?.low
           : d.p.end.properties.totalValue?.low === 0
-            ? 0
-            : d.p.end.properties.totalValue,
+          ? 0
+          : d.p.end.properties.totalValue,
       };
       return [startNode, endNode];
     });
@@ -174,5 +172,21 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
 
   updateWallet(address: string, updateWalletDto: UpdateWalletDto) {
     return this.walletRepository.update(address, updateWalletDto);
+  }
+
+  async findByHasTag(hasTag: boolean, size: number) {
+    const result = await this.walletRepository.find({
+      where: { hasTag },
+      take: size,
+    });
+    return result;
+  }
+
+  async updateManyHasTag(addresses: string[]) {
+    if (!addresses.length) return;
+    const result = await this.walletRepository.update(addresses, {
+      hasTag: true,
+    });
+    return result;
   }
 }

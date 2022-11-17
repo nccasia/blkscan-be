@@ -26,6 +26,6 @@ import { TransactionsController } from './controllers/transactions.controller';
     SendService,
     TransactionsService,
   ],
-  exports: [WalletsService, TransactionsService],
+  exports: [WalletsService, TransactionsService, TagsService],
 })
 export class WalletsModule {}
