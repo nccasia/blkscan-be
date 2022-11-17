@@ -121,8 +121,7 @@ export class TransactionsService {
         (error, blockHeader) => {
           if (!error) {
             this.logger.log(
-              `subscription #${blockHeader?.number}: hash ${
-                blockHeader?.hash
+              `subscription #${blockHeader?.number}: hash ${blockHeader?.hash
               } parent ..${blockHeader?.parentHash?.slice(-6)}`,
             );
             return;

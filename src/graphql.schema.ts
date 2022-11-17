@@ -48,7 +48,7 @@ export interface IQuery {
     getAddresses(): Nullable<Nullable<Address>[]> | Promise<Nullable<Nullable<Address>[]>>;
     getAddress(address: string): Nullable<Address> | Promise<Nullable<Address>>;
     getGraph(limit?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
-    searchGraph(id: string): Nullable<Graph> | Promise<Nullable<Graph>>;
+    searchGraph(id: string, limit?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
 }
 
 export interface IMutation {
