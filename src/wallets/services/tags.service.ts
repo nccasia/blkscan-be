@@ -109,7 +109,7 @@ export class TagsService {
       return tags || [];
     } catch (error) {
       // console.error(error);
-      this.logger.error(`saveTagFromAddres url error ${url}`);
+      this.logger.error(`saveTagsFromAddress url error ${url}`);
       throw error;
     }
   }

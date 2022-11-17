@@ -173,6 +173,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   }
 
   async updateManyHasTag(addresses: string[]) {
+    if (!addresses.length) return;
     const result = await this.walletRepository.update(addresses, {
       hasTag: true,
     });

@@ -19,7 +19,7 @@ export class Wallet {
   @Column({ nullable: true })
   type: number;
 
-  @Column({ nullable: true, type: 'boolean' })
+  @Column({ nullable: true, type: 'boolean', default: false })
   hasTag: boolean;
 
   @UpdateDateColumn({

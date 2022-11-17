@@ -29,8 +29,7 @@ export class JobsService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.logger.log(`onApplicationBootstrap`);
-    // this.crawlsTransactions();
-    this.saveTagsByWallets();
+    this.crawlsTransactions();
   }
 
   // this cron is using temporary while calling to infura
@@ -64,15 +63,17 @@ export class JobsService implements OnApplicationBootstrap {
     await this.transactionsService.convertMany(convertIds);
   }
 
-  // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTagsByWallets() {
-    const wallets = await this.walletsService.findByHasTag(false, 2000);
+    console.time(`saveTagsByWallets`);
+    const wallets = await this.walletsService.findByHasTag(false, 2200);
     this.logger.log(`wallets.length ${wallets.length}`);
     const walletAddresses = wallets.map((t) => t.address);
 
     await this.tagsService.saveTags(walletAddresses);
     await this.walletsService.updateManyHasTag(walletAddresses);
     this.logger.log(`done saveTagsByWallets ${walletAddresses.length}`);
+    console.timeEnd(`saveTagsByWallets`);
   }
 
   // async saveTransactionsToNeo4j() {
