@@ -82,12 +82,12 @@ export class TransactionsService {
     return this.transactionRepository.find();
   }
 
-  async findWithConverted(needConverted: boolean) {
+  async findWithConverted(needConverted: boolean, size: number) {
     const query = this.dataSource
       .createQueryBuilder(Transaction, 't')
       .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
       .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`)
-      .limit(4000);
+      .limit(size);
     // this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
     return result;

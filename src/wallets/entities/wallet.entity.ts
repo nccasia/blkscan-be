@@ -19,9 +19,8 @@ export class Wallet {
   @Column({ nullable: true })
   type: number;
 
-  // TODO: remove this lastUpdate field, use updatedAt instead
-  @Column({ nullable: true, type: 'bigint' })
-  lastUpdate: number;
+  @Column({ nullable: true, type: 'boolean' })
+  hasTag: boolean;
 
   @UpdateDateColumn({
     type: 'timestamp with time zone',
