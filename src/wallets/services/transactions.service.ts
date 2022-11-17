@@ -31,7 +31,7 @@ export class TransactionsService {
     private readonly httpService: HttpService,
     private readonly walletService: WalletsService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   // TODO: use DTO type
   async createAndConvert(createDto: Transaction) {
@@ -119,8 +119,7 @@ export class TransactionsService {
         (error, blockHeader) => {
           if (!error) {
             this.logger.log(
-              `subscription #${blockHeader?.number}: hash ${
-                blockHeader?.hash
+              `subscription #${blockHeader?.number}: hash ${blockHeader?.hash
               } parent ..${blockHeader?.parentHash?.slice(-6)}`,
             );
             return;
