@@ -121,8 +121,11 @@ export class TransactionsService {
         (error, blockHeader) => {
           if (!error) {
             this.logger.log(
-              `subscription #${blockHeader?.number}: hash ${blockHeader?.hash
-              } parent ..${blockHeader?.parentHash?.slice(-6)}`,
+              `subscription #${
+                blockHeader?.number
+              }: hash ..${blockHeader?.hash?.slice(
+                -6,
+              )} parent ..${blockHeader?.parentHash?.slice(-6)}`,
             );
             return;
           }
@@ -175,10 +178,10 @@ export class TransactionsService {
                 if (!result) return;
                 const fromAddress = result.from;
                 const toAddress = result.to;
+                // console.log('🚀  ~ result', result);
                 if (toAddress) {
                   const value = +web3.utils.fromWei(result.value, 'ether');
                   // const value2 = parseFloat(result.value) / 1000000000000000000;
-                  // const bn = web3.utils.toBN(result.value);
                   // console.log('value1', value);
                   // console.log('value2', value2);
                   // console.log('value2 comp', value2 == value);
