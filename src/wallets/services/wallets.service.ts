@@ -49,7 +49,12 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     return trans.close();
   }
 
-  async saveGraph(from: string, to: string, val: number): Promise<any> {
+  async saveGraph(
+    from: string,
+    to: string,
+    val: number,
+    toCalledCount: number,
+  ): Promise<any> {
     const rs = await this.neo4jService.run(
       {
         cypher: `MERGE (fromAddress:Address {address: "${from}"})
@@ -63,7 +68,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
               toAddress.count = 1
         ON MATCH
           SET toAddress.totalValue = toAddress.totalValue + ${val},
-              toAddress.count = toAddress.count + 1
+              toAddress.count = toAddress.count + ${toCalledCount}
         MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
         RETURN fromAddress, toAddress`,
       },
@@ -82,20 +87,26 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     const nodes = data.map((d) => {
       const startNode = {
         id: d.p.start.properties.address,
-        totalValue: d.p.start.properties.totalValue?.low
-          ? d.p.start.properties.totalValue?.low
-          : d.p.start.properties.totalValue?.low === 0
-          ? 0
-          : d.p.start.properties.totalValue,
+        totalValue:
+          typeof d.p.start.properties.totalValue?.low === 'number'
+            ? d.p.start.properties.totalValue?.low
+            : d.p.start.properties.totalValue,
+        count:
+          typeof d.p.start.properties.count?.low === 'number'
+            ? d.p.start.properties.count?.low
+            : d.p.start.properties.count,
       };
 
       const endNode = {
         id: d.p.end.properties.address,
-        totalValue: d.p.end.properties.totalValue?.low
-          ? d.p.end.properties.totalValue?.low
-          : d.p.end.properties.totalValue?.low === 0
-          ? 0
-          : d.p.end.properties.totalValue,
+        totalValue:
+          typeof d.p.end.properties.totalValue?.low === 'number'
+            ? d.p.end.properties.totalValue?.low
+            : d.p.end.properties.totalValue,
+        count:
+          typeof d.p.end.properties.count?.low === 'number'
+            ? d.p.end.properties.count?.low
+            : d.p.end.properties.count,
       };
       return [startNode, endNode];
     });
@@ -128,6 +139,10 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
           : d.p.start.properties.totalValue?.low === 0
           ? 0
           : d.p.start.properties.totalValue,
+        count:
+          typeof d.p.start.properties.count?.low === 'number'
+            ? d.p.start.properties.count?.low
+            : d.p.start.properties.count,
       };
 
       const endNode = {
@@ -137,6 +152,10 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
           : d.p.end.properties.totalValue?.low === 0
           ? 0
           : d.p.end.properties.totalValue,
+        count:
+          typeof d.p.end.properties.count?.low === 'number'
+            ? d.p.end.properties.count?.low
+            : d.p.end.properties.count,
       };
       return [startNode, endNode];
     });

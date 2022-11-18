@@ -178,7 +178,7 @@ export class TransactionsService {
                 if (!result) return;
                 const fromAddress = result.from;
                 const toAddress = result.to;
-                console.log('🚀  ~ result', result);
+                // console.log('🚀  ~ result', result);
                 if (toAddress) {
                   const value = +web3.utils.fromWei(result.value, 'ether');
                   // const value2 = parseFloat(result.value) / 1000000000000000000;

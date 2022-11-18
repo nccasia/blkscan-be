@@ -43,31 +43,33 @@ export class JobsService implements OnApplicationBootstrap {
     this.logger.log(`isCrawls ${isCrawls}`);
   }
 
-  // @Cron('0 */15 * * * *', { timeZone: 'Asia/Ho_Chi_Minh' }) // EVERY_15_MINUTES
-  @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
+  @Cron(`0 */5 * * * *`, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
+    console.time(`saveTransactionsToNeo4j`);
     const transactions = await this.transactionsService.findWithConverted(
       false,
-      1500,
+      2000,
     );
-    this.logger.log(`findWithConverted.length ${transactions.length}`);
+    this.logger.log(`start saveTransactionsToNeo4j ${transactions.length}`);
     const convertIds = transactions.map((t) => t.id);
 
     for (const tx of transactions) {
       const fromAddress = tx.from;
       const toAddress = tx.to;
       const value = tx.value;
-      await this.walletsService.saveGraph(fromAddress, toAddress, value);
+      await this.walletsService.saveGraph(fromAddress, toAddress, value, 1);
     }
 
     await this.transactionsService.convertMany(convertIds);
+    this.logger.log(`done saveTransactionsToNeo4j ${convertIds.length}`);
+    console.timeEnd(`saveTransactionsToNeo4j`);
   }
 
   // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTagsByWallets() {
     console.time(`saveTagsByWallets`);
-    const wallets = await this.walletsService.findByHasTag(false, 2200);
-    this.logger.log(`wallets.length ${wallets.length}`);
+    const wallets = await this.walletsService.findByHasTag(false, 1500);
+    this.logger.log(`start saveTagsByWallets ${wallets.length}`);
     const walletAddresses = wallets.map((t) => t.address);
 
     await this.tagsService.saveTags(walletAddresses);
