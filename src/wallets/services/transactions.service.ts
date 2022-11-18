@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { sleep } from 'src/common/utils/sleep';
 import { BlockHeader } from 'web3-eth';
 import { Subscription } from 'web3-core-subscriptions';
+import { TagsService } from './tags.service';
 
 @Injectable()
 export class TransactionsService {
@@ -30,6 +31,7 @@ export class TransactionsService {
     protected readonly neo4jService: Neo4jService,
     private readonly httpService: HttpService,
     private readonly walletService: WalletsService,
+    private readonly tagsService: TagsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -80,13 +82,13 @@ export class TransactionsService {
     return this.transactionRepository.find();
   }
 
-  async findWithConverted(needConverted: boolean) {
+  async findWithConverted(needConverted: boolean, size: number) {
     const query = this.dataSource
       .createQueryBuilder(Transaction, 't')
       .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
       .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`)
-      .limit(1000);
-    this.logger.log(`query ${query.getSql()}`);
+      .limit(size);
+    // this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
     return result;
   }
@@ -119,9 +121,11 @@ export class TransactionsService {
         (error, blockHeader) => {
           if (!error) {
             this.logger.log(
-              `subscription #${blockHeader?.number}: hash ${
-                blockHeader?.hash
-              } parent ..${blockHeader?.parentHash?.slice(-6)}`,
+              `subscription #${
+                blockHeader?.number
+              }: hash ..${blockHeader?.hash?.slice(
+                -6,
+              )} parent ..${blockHeader?.parentHash?.slice(-6)}`,
             );
             return;
           }
@@ -174,8 +178,13 @@ export class TransactionsService {
                 if (!result) return;
                 const fromAddress = result.from;
                 const toAddress = result.to;
+                // console.log('🚀  ~ result', result);
                 if (toAddress) {
-                  const value = parseFloat(result.value) / 1000000000000000000;
+                  const value = +web3.utils.fromWei(result.value, 'ether');
+                  // const value2 = parseFloat(result.value) / 1000000000000000000;
+                  // console.log('value1', value);
+                  // console.log('value2', value2);
+                  // console.log('value2 comp', value2 == value);
 
                   insertTransactions.push(
                     this.transactionRepository.create({
@@ -224,6 +233,11 @@ export class TransactionsService {
               retryPromise<InsertResult>(() =>
                 this.walletService.createWallet(insertWallets),
               ),
+              // retryPromise<boolean>(() =>
+              //   this.tagsService.saveTags(
+              //     insertWallets.map((wallet) => wallet.address),
+              //   ),
+              // ),
             ]);
             // await this.transactionRepository.insert(insertTransactions);
             // await this.walletService.createWallet(insertWallets);

@@ -14,10 +14,7 @@ export class WalletsResolver {
   }
 
   @Query('searchGraph')
-  async searchGraph(
-    @Args('id')
-    id: string,
-  ) {
-    return this.walletsService.searchGraph(id);
+  async searchGraph(@Args('id') id: string, @Args('limit') limit: number) {
+    return this.walletsService.searchGraph(id, limit);
   }
 }

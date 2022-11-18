@@ -22,6 +22,7 @@ export interface Address {
     __typename?: 'Address';
     address: string;
     totalValue?: Nullable<number>;
+    count?: Nullable<number>;
     desc?: Nullable<string>;
 }
 
@@ -29,6 +30,7 @@ export interface Node {
     __typename?: 'Node';
     id?: Nullable<string>;
     totalValue?: Nullable<number>;
+    count?: Nullable<number>;
 }
 
 export interface Link {
@@ -48,7 +50,7 @@ export interface IQuery {
     getAddresses(): Nullable<Nullable<Address>[]> | Promise<Nullable<Nullable<Address>[]>>;
     getAddress(address: string): Nullable<Address> | Promise<Nullable<Address>>;
     getGraph(limit?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
-    searchGraph(id: string): Nullable<Graph> | Promise<Nullable<Graph>>;
+    searchGraph(id: string, limit?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
 }
 
 export interface IMutation {

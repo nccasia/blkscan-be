@@ -5,12 +5,16 @@ interface Send {
 type Address {
   address: ID!
   totalValue: Float
+  count: Int
   desc: String
 }
+
 type Node {
-id: String
-totalValue: Float
+  id: String
+  totalValue: Float
+  count: Int
 }
+
 type Link {
   source: String
   target: String
@@ -20,7 +24,6 @@ type Graph {
   nodes: [Node]
   links: [Link]
 }
-
 
 input CreateAddressInput {
   address: String
@@ -32,7 +35,7 @@ type Query {
   getAddresses: [Address]
   getAddress(address: ID!): Address
   getGraph(limit: Int): Graph
-  searchGraph(id: ID!): Graph
+  searchGraph(id: ID!, limit: Int): Graph
 }
 
 type Mutation {
