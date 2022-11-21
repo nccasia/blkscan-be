@@ -197,6 +197,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     const nodes = data.map((d) => {
       const startNode = {
         id: d.p.start.properties.address,
+        funcName: d.p.start.properties.funcName,
         totalValue:
           typeof d.p.start.properties.totalValue?.low === 'number'
             ? d.p.start.properties.totalValue?.low
@@ -209,6 +210,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
 
       const endNode = {
         id: d.p.end.properties.address,
+        funcName: d.p.end.properties.funcName,
         totalValue:
           typeof d.p.end.properties.totalValue?.low === 'number'
             ? d.p.end.properties.totalValue?.low
@@ -244,6 +246,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     const nodes = data.map((d) => {
       const startNode = {
         id: d.p.start.properties.address,
+        funcName: d.p.start.properties.funcName,
         totalValue: d.p.start.properties.totalValue?.low
           ? d.p.start.properties.totalValue?.low
           : d.p.start.properties.totalValue?.low === 0
@@ -257,6 +260,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
 
       const endNode = {
         id: d.p.end.properties.address,
+        funcName: d.p.end.properties.funcName,
         totalValue: d.p.end.properties.totalValue?.low
           ? d.p.end.properties.totalValue?.low
           : d.p.end.properties.totalValue?.low === 0
