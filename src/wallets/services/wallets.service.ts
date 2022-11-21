@@ -9,6 +9,10 @@ import { AddressDto } from '../dto/address.dto';
 import { SendDto } from '../dto/send.dto';
 import { UpdateWalletDto } from '../dto/update-wallet.dto';
 import { CreateWalletDto } from '../dto/create-wallet.dto';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
+import InputDataDecoder, { InputData } from 'ethereum-input-data-decoder';
+import { Transaction } from '../entities/transaction.entity';
 
 @Injectable()
 export class WalletsService extends Neo4jNodeModelService<AddressDto> {
@@ -18,6 +22,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
     private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) {
     super();
   }
@@ -49,33 +54,138 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     return trans.close();
   }
 
-  async saveGraph(
-    from: string,
-    to: string,
-    val: number,
-    toCalledCount: number,
-  ): Promise<any> {
+  async saveGraph(tx: Transaction): Promise<any> {
+    const from = tx.from;
+    const to = tx.to;
+    const val = tx.value;
+    let toCalledCount = 1;
+    let contractIsFrom: boolean = null;
+    let contractFuncName = '';
+
+    if (val === 0) {
+      const [abiFrom, abiTo] = await Promise.all([
+        this.getAbi(from),
+        this.getAbi(to),
+      ]);
+      contractIsFrom = !!abiFrom;
+
+      abiFrom.length &&
+        abiTo.length &&
+        console.log(
+          'abiFrom, abiTo length',
+          abiFrom.length,
+          abiTo.length,
+          tx.hash,
+        );
+
+      const decodeData = this.decodeData(
+        contractIsFrom ? abiFrom : abiTo,
+        tx.input,
+      );
+      if (decodeData) {
+        contractFuncName = decodeData.method || '';
+        decodeData.types.forEach((type, index) => {
+          if (type.includes('[]')) {
+            toCalledCount += decodeData.inputs?.[index]?.length || 0;
+          } else if (type.includes('bytes')) {
+            toCalledCount += 1;
+          }
+        });
+
+        toCalledCount === 1 &&
+          decodeData.types.length &&
+          console.log(
+            `toCalledCount, decodeData.types`,
+            toCalledCount,
+            decodeData.types,
+          );
+        !contractFuncName && console.log(`!contractFuncName`, decodeData);
+      }
+    }
+
+    // const run = (a: any, b: any) => {
+    //   a;
+    //   b;
+    // };
     const rs = await this.neo4jService.run(
+      // const rs = run(
       {
         cypher: `MERGE (fromAddress:Address {address: "${from}"})
         ON CREATE
-          SET fromAddress.totalValue = ${val}
+          SET fromAddress.totalValue = ${val},
+              fromAddress.count = ${toCalledCount},
+              fromAddress.funcName = "${contractIsFrom ? contractFuncName : ''}"
         ON MATCH
-          SET fromAddress.totalValue = fromAddress.totalValue + ${val}
+          SET fromAddress.totalValue = fromAddress.totalValue + ${val},
+              fromAddress.count = fromAddress.count + ${toCalledCount}
         MERGE (toAddress:Address {address: "${to}"})
         ON CREATE
           SET toAddress.totalValue = ${val},
-              toAddress.count = 1
+              toAddress.count = ${toCalledCount},
+              toAddress.funcName = "${!contractIsFrom ? contractFuncName : ''}"
         ON MATCH
           SET toAddress.totalValue = toAddress.totalValue + ${val},
               toAddress.count = toAddress.count + ${toCalledCount}
-        MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
+        MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}", funcName: "${contractFuncName}" }]->(toAddress)
         RETURN fromAddress, toAddress`,
       },
       { write: true },
     );
     return rs;
   }
+
+  async getAbi(address: string): Promise<string> {
+    const apiKey = this.configService.get<string>('ETH_SCAN_API_KEY');
+    const URL = `https://api.etherscan.io/api?module=contract&action=getabi&address=${address}&apikey=${apiKey}`;
+    const { data } = await firstValueFrom(
+      this.httpService.get(URL).pipe(),
+    ).catch(async (error) => {
+      console.error('getAbi ~ error', error);
+      // await this.stopCrawlsLogError('lastValueFrom', error, subscription);
+      return { data: null };
+    });
+
+    if (data && data.status === '1') {
+      return data.result || '';
+    }
+    return '';
+  }
+
+  decodeData(abi: string, txInput: string): InputData | null {
+    if (!abi || !txInput) return null;
+    const decoder = new InputDataDecoder(abi);
+    return decoder.decodeData(txInput);
+  }
+
+  // async saveGraph(
+  //   from: string,
+  //   to: string,
+  //   val: number,
+  //   toCalledCount: number,
+  // ): Promise<any> {
+  //   const rs = await this.neo4jService.run(
+  //     {
+  //       cypher: `MERGE (fromAddress:Address {address: "${from}"})
+  //       ON CREATE
+  //         SET fromAddress.totalValue = ${val},
+  //             fromAddress.count = 1
+  //       ON MATCH
+  //         SET fromAddress.totalValue = fromAddress.totalValue + ${val},
+  //             fromAddress.count = toAddress.count + ${toCalledCount}
+  //       MERGE (toAddress:Address {address: "${to}"})
+  //       ON CREATE
+  //         SET toAddress.totalValue = ${val},
+  //             toAddress.count = 1
+  //       ON MATCH
+  //         SET toAddress.totalValue = toAddress.totalValue + ${val},
+  //             toAddress.count = toAddress.count + ${toCalledCount}
+  //       MERGE (fromAddress)-[s:Send {value: ${val}, source: "${from}", target: "${to}" }]->(toAddress)
+  //       RETURN fromAddress, toAddress`,
+  //     },
+  //     { write: true },
+  //   );
+  //   return rs;
+  // }
 
   async getGraph(limit = 10000) {
     const queryResult = await this.neo4jService.run({
@@ -87,6 +197,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     const nodes = data.map((d) => {
       const startNode = {
         id: d.p.start.properties.address,
+        funcName: d.p.start.properties.funcName,
         totalValue:
           typeof d.p.start.properties.totalValue?.low === 'number'
             ? d.p.start.properties.totalValue?.low
@@ -99,6 +210,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
 
       const endNode = {
         id: d.p.end.properties.address,
+        funcName: d.p.end.properties.funcName,
         totalValue:
           typeof d.p.end.properties.totalValue?.low === 'number'
             ? d.p.end.properties.totalValue?.low
@@ -134,6 +246,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     const nodes = data.map((d) => {
       const startNode = {
         id: d.p.start.properties.address,
+        funcName: d.p.start.properties.funcName,
         totalValue: d.p.start.properties.totalValue?.low
           ? d.p.start.properties.totalValue?.low
           : d.p.start.properties.totalValue?.low === 0
@@ -147,6 +260,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
 
       const endNode = {
         id: d.p.end.properties.address,
+        funcName: d.p.end.properties.funcName,
         totalValue: d.p.end.properties.totalValue?.low
           ? d.p.end.properties.totalValue?.low
           : d.p.end.properties.totalValue?.low === 0

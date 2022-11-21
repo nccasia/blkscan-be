@@ -90,6 +90,11 @@ export class TransactionsService {
       .limit(size);
     // this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
+    // const result = this.transactionRepository.find({
+    //   where: {
+    //     hash: '0x74b44b58af04d83255b0e44414afa02e54ea5ee58b07f40ec267be44053a748b',
+    //   },
+    // });
     return result;
   }
 
@@ -178,8 +183,7 @@ export class TransactionsService {
                 if (!result) return;
                 const fromAddress = result.from;
                 const toAddress = result.to;
-                // console.log('🚀  ~ result', result);
-                if (toAddress) {
+                if (toAddress && fromAddress) {
                   const value = +web3.utils.fromWei(result.value, 'ether');
                   // const value2 = parseFloat(result.value) / 1000000000000000000;
                   // console.log('value1', value);
@@ -192,6 +196,18 @@ export class TransactionsService {
                       to: toAddress,
                       value: value,
                       type: result.type ?? null,
+                      blockHash: result.blockHash,
+                      blockNumber: result.blockNumber,
+                      chainId: result.chainId,
+                      gas: result.gas,
+                      gasPrice: result.gasPrice,
+                      hash: result.hash,
+                      input: result.input,
+                      nonce: result.nonce,
+                      r: result.r,
+                      s: result.s,
+                      transactionIndex: result.transactionIndex,
+                      v: result.v,
                     }),
                   );
                   // await this.saveGraph(fromAddress, toAddress, value);
@@ -239,8 +255,6 @@ export class TransactionsService {
               //   ),
               // ),
             ]);
-            // await this.transactionRepository.insert(insertTransactions);
-            // await this.walletService.createWallet(insertWallets);
             insertTransactions = [];
           }
         })
