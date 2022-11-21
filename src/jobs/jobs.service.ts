@@ -49,7 +49,7 @@ export class JobsService implements OnApplicationBootstrap {
     console.time(`[DoneTime] saveTransactionsToNeo4j`);
     const transactions = await this.transactionsService.findWithConverted(
       false,
-      250,
+      200,
     );
     this.logger.log(`start saveTransactionsToNeo4j ${transactions.length}`);
     const convertIds = transactions.map((t) => t.id);

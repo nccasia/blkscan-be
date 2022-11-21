@@ -92,11 +92,13 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
           }
         });
 
-        console.log(
-          `toCalledCount, decodeData.types`,
-          toCalledCount,
-          decodeData.types,
-        );
+        toCalledCount === 1 &&
+          decodeData.types.length &&
+          console.log(
+            `toCalledCount, decodeData.types`,
+            toCalledCount,
+            decodeData.types,
+          );
         !contractFuncName && console.log(`!contractFuncName`, decodeData);
       }
     }
@@ -135,7 +137,6 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   async getAbi(address: string): Promise<string> {
     const apiKey = this.configService.get<string>('ETH_SCAN_API_KEY');
     const URL = `https://api.etherscan.io/api?module=contract&action=getabi&address=${address}&apikey=${apiKey}`;
-
     const { data } = await firstValueFrom(
       this.httpService.get(URL).pipe(),
     ).catch(async (error) => {
@@ -143,8 +144,9 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
       // await this.stopCrawlsLogError('lastValueFrom', error, subscription);
       return { data: null };
     });
-    if (data?.status === '1') {
-      return data?.result || '';
+
+    if (data && data.status === '1') {
+      return data.result || '';
     }
     return '';
   }
