@@ -5,6 +5,7 @@ interface Send {
 type Address {
   address: ID!
   totalValue: Float
+  funcName: String
   count: Int
   desc: String
 }
@@ -13,6 +14,7 @@ type Node {
   id: String
   totalValue: Float
   count: Int
+  funcName: String
 }
 
 type Link {
