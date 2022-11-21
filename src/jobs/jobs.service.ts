@@ -43,7 +43,6 @@ export class JobsService implements OnApplicationBootstrap {
     this.logger.log(`isCrawls ${isCrawls}`);
   }
 
-  // @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   @Cron(`0 */5 * * * *`, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
     console.time(`[DoneTime] saveTransactionsToNeo4j`);

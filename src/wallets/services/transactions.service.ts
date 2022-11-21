@@ -88,7 +88,6 @@ export class TransactionsService {
       .leftJoinAndSelect(ConvertedTransaction, 'ct', 'ct.transactionId = t.id')
       .where(`ct.transactionId IS ${needConverted ? 'NOT' : ''} NULL`)
       .limit(size);
-
     // this.logger.log(`query ${query.getSql()}`);
     const result = await query.getMany();
     // const result = this.transactionRepository.find({
@@ -184,7 +183,6 @@ export class TransactionsService {
                 if (!result) return;
                 const fromAddress = result.from;
                 const toAddress = result.to;
-                // console.log('🚀  ~ result', result);
                 if (toAddress && fromAddress) {
                   const value = +web3.utils.fromWei(result.value, 'ether');
                   // const value2 = parseFloat(result.value) / 1000000000000000000;
@@ -251,6 +249,11 @@ export class TransactionsService {
               retryPromise<InsertResult>(() =>
                 this.walletService.createWallet(insertWallets),
               ),
+              // retryPromise<boolean>(() =>
+              //   this.tagsService.saveTags(
+              //     insertWallets.map((wallet) => wallet.address),
+              //   ),
+              // ),
             ]);
             insertTransactions = [];
           }
