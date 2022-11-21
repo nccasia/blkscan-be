@@ -43,31 +43,30 @@ export class JobsService implements OnApplicationBootstrap {
     this.logger.log(`isCrawls ${isCrawls}`);
   }
 
+  // @Cron(CronExpression.EVERY_10_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   @Cron(`0 */5 * * * *`, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTransactionsToNeo4j() {
-    console.time(`saveTransactionsToNeo4j`);
+    console.time(`[DoneTime] saveTransactionsToNeo4j`);
     const transactions = await this.transactionsService.findWithConverted(
       false,
-      2000,
+      250,
     );
     this.logger.log(`start saveTransactionsToNeo4j ${transactions.length}`);
     const convertIds = transactions.map((t) => t.id);
 
     for (const tx of transactions) {
-      const fromAddress = tx.from;
-      const toAddress = tx.to;
-      const value = tx.value;
-      await this.walletsService.saveGraph(fromAddress, toAddress, value, 1);
+      await this.walletsService.saveGraph(tx);
+      // await this.walletsService.saveGraph(fromAddress, toAddress, value, 1);
     }
 
     await this.transactionsService.convertMany(convertIds);
     this.logger.log(`done saveTransactionsToNeo4j ${convertIds.length}`);
-    console.timeEnd(`saveTransactionsToNeo4j`);
+    console.timeEnd(`[DoneTime] saveTransactionsToNeo4j`);
   }
 
   // @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'Asia/Ho_Chi_Minh' })
   async saveTagsByWallets() {
-    console.time(`saveTagsByWallets`);
+    console.time(`[DoneTime] saveTagsByWallets`);
     const wallets = await this.walletsService.findByHasTag(false, 1500);
     this.logger.log(`start saveTagsByWallets ${wallets.length}`);
     const walletAddresses = wallets.map((t) => t.address);
@@ -75,7 +74,7 @@ export class JobsService implements OnApplicationBootstrap {
     await this.tagsService.saveTags(walletAddresses);
     await this.walletsService.updateManyHasTag(walletAddresses);
     this.logger.log(`done saveTagsByWallets ${walletAddresses.length}`);
-    console.timeEnd(`saveTagsByWallets`);
+    console.timeEnd(`[DoneTime] saveTagsByWallets`);
   }
 
   // async saveTransactionsToNeo4j() {

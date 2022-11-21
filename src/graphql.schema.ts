@@ -22,6 +22,7 @@ export interface Address {
     __typename?: 'Address';
     address: string;
     totalValue?: Nullable<number>;
+    funcName?: Nullable<string>;
     count?: Nullable<number>;
     desc?: Nullable<string>;
 }
@@ -31,6 +32,7 @@ export interface Node {
     id?: Nullable<string>;
     totalValue?: Nullable<number>;
     count?: Nullable<number>;
+    funcName?: Nullable<string>;
 }
 
 export interface Link {
