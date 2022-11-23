@@ -95,7 +95,7 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
         toCalledCount === 1 &&
           decodeData.types.length &&
           console.log(
-            `__decodeData.types`,
+            `__decodeData.types + hash`,
             tx.hash,
             // toCalledCount,
             decodeData.types,
