@@ -95,11 +95,13 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
         toCalledCount === 1 &&
           decodeData.types.length &&
           console.log(
-            `toCalledCount, decodeData.types`,
-            toCalledCount,
+            `__decodeData.types`,
+            tx.hash,
+            // toCalledCount,
             decodeData.types,
           );
-        !contractFuncName && console.log(`!contractFuncName`, decodeData);
+        !contractFuncName &&
+          console.log(`!contractFuncName`, tx.hash, decodeData);
       }
     }
 
@@ -187,9 +189,12 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   //   return rs;
   // }
 
-  async getGraph(limit = 10000) {
+  async getGraph(limit = 10000, skip = 0) {
     const queryResult = await this.neo4jService.run({
-      cypher: `MATCH p=()-[s:Send]->() RETURN p LIMIT ${limit}`,
+      cypher: `MATCH p=(f:Address)-[r:Send]->(t:Address) 
+        RETURN p 
+        ORDER BY t.totalValue DESC, t.count DESC, f.totalValue DESC, f.count DESC
+        SKIP ${skip} LIMIT ${limit}`,
     });
 
     const data = queryResult.records.map((data) => data.toObject());
@@ -236,9 +241,13 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     return { nodes: nodesUniqueByKey, links };
   }
 
-  async searchGraph(id: string, limit: number) {
+  async searchGraph(id: string, limit = 200, skip = 0) {
     const queryResult = await this.neo4jService.run({
-      cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} where n.address="${id}" OR a.address="${id}" return p`,
+      cypher: `MATCH p= (f:Address)-[r:Send] -> (t:Address) WITH p 
+        SKIP ${skip} LIMIT ${limit}
+        WHERE f.address="${id}" OR t.address="${id}"
+        ORDER BY t.totalValue DESC, t.count DESC, f.totalValue DESC, f.count DESC
+        RETURN p`,
     });
 
     const data = queryResult.records.map((data) => data.toObject());

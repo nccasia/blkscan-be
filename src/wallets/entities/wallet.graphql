@@ -36,8 +36,8 @@ input CreateAddressInput {
 type Query {
   getAddresses: [Address]
   getAddress(address: ID!): Address
-  getGraph(limit: Int): Graph
-  searchGraph(id: ID!, limit: Int): Graph
+  getGraph(limit: Int, skip: Int): Graph
+  searchGraph(id: ID!, limit: Int, skip: Int): Graph
 }
 
 type Mutation {
