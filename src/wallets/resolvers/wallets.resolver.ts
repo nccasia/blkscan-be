@@ -8,13 +8,19 @@ export class WalletsResolver {
   @Query('getGraph')
   async getGraph(
     @Args('limit')
-    limit?: number,
+    limit: number,
+    @Args('skip')
+    skip: number,
   ) {
-    return this.walletsService.getGraph(limit);
+    return this.walletsService.getGraph(limit, skip);
   }
 
   @Query('searchGraph')
-  async searchGraph(@Args('id') id: string, @Args('limit') limit: number) {
-    return this.walletsService.searchGraph(id, limit);
+  async searchGraph(
+    @Args('id') id: string,
+    @Args('limit') limit: number,
+    @Args('skip') skip: number,
+  ) {
+    return this.walletsService.searchGraph(id, limit, skip);
   }
 }
