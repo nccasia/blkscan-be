@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import InputDataDecoder, { InputData } from 'ethereum-input-data-decoder';
 import { Transaction } from '../entities/transaction.entity';
+import { Graph } from 'src/graphql.schema';
 
 @Injectable()
 export class WalletsService extends Neo4jNodeModelService<AddressDto> {
@@ -189,11 +190,12 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   //   return rs;
   // }
 
-  async getGraph(limit = 10000, skip = 0) {
+  async getGraphWallet(limit = 10000, skip = 0): Promise<Graph> {
     const queryResult = await this.neo4jService.run({
       cypher: `MATCH p=(f:Address)-[r:Send]->(t:Address) 
+        WHERE f.totalValue > 0 AND t.totalValue > 0
         RETURN p 
-        ORDER BY t.totalValue DESC, t.count DESC, f.totalValue DESC, f.count DESC
+        ORDER BY t.totalValue DESC, f.totalValue DESC
         SKIP ${skip} LIMIT ${limit}`,
     });
 
@@ -241,7 +243,60 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
     return { nodes: nodesUniqueByKey, links };
   }
 
-  async searchGraph(id: string, limit = 200, skip = 0) {
+  async getGraphContract(limit = 10000, skip = 0): Promise<Graph> {
+    const queryResult = await this.neo4jService.run({
+      cypher: `MATCH p=(f:Address)-[r:Send]->(t:Address) 
+        WHERE f.totalValue = 0 AND t.totalValue = 0 AND t.funcName <> ""
+        RETURN p 
+        ORDER BY t.count DESC, f.count DESC
+        SKIP ${skip} LIMIT ${limit}`,
+    });
+
+    const data = queryResult.records.map((data) => data.toObject());
+    const key = 'id';
+    const nodes = data.map((d) => {
+      const startNode = {
+        id: d.p.start.properties.address,
+        funcName: d.p.start.properties.funcName,
+        totalValue:
+          typeof d.p.start.properties.totalValue?.low === 'number'
+            ? d.p.start.properties.totalValue?.low
+            : d.p.start.properties.totalValue,
+        count:
+          typeof d.p.start.properties.count?.low === 'number'
+            ? d.p.start.properties.count?.low
+            : d.p.start.properties.count,
+      };
+
+      const endNode = {
+        id: d.p.end.properties.address,
+        funcName: d.p.end.properties.funcName,
+        totalValue:
+          typeof d.p.end.properties.totalValue?.low === 'number'
+            ? d.p.end.properties.totalValue?.low
+            : d.p.end.properties.totalValue,
+        count:
+          typeof d.p.end.properties.count?.low === 'number'
+            ? d.p.end.properties.count?.low
+            : d.p.end.properties.count,
+      };
+      return [startNode, endNode];
+    });
+
+    const nodesUniqueByKey = [
+      ...new Map(nodes.flat().map((item) => [item[key], item])).values(),
+    ];
+
+    const links = data.map((d) => {
+      return {
+        source: d.p.start.properties.address,
+        target: d.p.end.properties.address,
+      };
+    });
+    return { nodes: nodesUniqueByKey, links };
+  }
+
+  async searchGraph(id: string, limit = 200, skip = 0): Promise<Graph> {
     // const queryResult = await this.neo4jService.run({
     //   cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} where n.address="${id}" OR a.address="${id}" return p`,
     // });
