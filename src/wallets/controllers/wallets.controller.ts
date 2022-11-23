@@ -7,6 +7,6 @@ export class WalletsController {
 
   @Get('getGraph')
   getGraph() {
-    return this.walletsService.getGraph();
+    return this.walletsService.getGraphWallet();
   }
 }

@@ -1,4 +1,5 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { Graph, NodeType } from 'src/graphql.schema';
 import { WalletsService } from '../services/wallets.service';
 
 @Resolver('Address')
@@ -11,8 +12,21 @@ export class WalletsResolver {
     limit: number,
     @Args('skip')
     skip: number,
+    @Args('type')
+    type: NodeType,
   ) {
-    return this.walletsService.getGraph(limit, skip);
+    switch (type) {
+      case NodeType.Contracts: {
+        return this.walletsService.getGraphContract(limit, skip);
+      }
+      case NodeType.Wallets: {
+        return this.walletsService.getGraphWallet(limit, skip);
+      }
+      default: {
+        const graph: Graph = { nodes: [], links: [] };
+        return graph;
+      }
+    }
   }
 
   @Query('searchGraph')
