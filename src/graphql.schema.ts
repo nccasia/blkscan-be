@@ -8,6 +8,11 @@
 /* tslint:disable */
 /* eslint-disable */
 
+export enum NodeType {
+    Wallets = "Wallets",
+    Contracts = "Contracts"
+}
+
 export interface CreateAddressInput {
     address?: Nullable<string>;
     totalValue?: Nullable<number>;
@@ -16,6 +21,9 @@ export interface CreateAddressInput {
 
 export interface Send {
     value?: Nullable<number>;
+    source?: Nullable<string>;
+    target?: Nullable<string>;
+    funcName?: Nullable<string>;
 }
 
 export interface Address {
@@ -51,7 +59,7 @@ export interface IQuery {
     __typename?: 'IQuery';
     getAddresses(): Nullable<Nullable<Address>[]> | Promise<Nullable<Nullable<Address>[]>>;
     getAddress(address: string): Nullable<Address> | Promise<Nullable<Address>>;
-    getGraph(limit?: Nullable<number>, skip?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
+    getGraph(limit?: Nullable<number>, skip?: Nullable<number>, type?: Nullable<NodeType>): Nullable<Graph> | Promise<Nullable<Graph>>;
     searchGraph(id: string, limit?: Nullable<number>, skip?: Nullable<number>): Nullable<Graph> | Promise<Nullable<Graph>>;
 }
 

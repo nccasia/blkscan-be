@@ -1,5 +1,13 @@
 interface Send {
   value: Float
+  source: String
+  target: String
+  funcName: String
+}
+
+enum NodeType {
+  Wallets
+  Contracts
 }
 
 type Address {
@@ -36,7 +44,7 @@ input CreateAddressInput {
 type Query {
   getAddresses: [Address]
   getAddress(address: ID!): Address
-  getGraph(limit: Int, skip: Int): Graph
+  getGraph(limit: Int, skip: Int, type: NodeType): Graph
   searchGraph(id: ID!, limit: Int, skip: Int): Graph
 }
 
