@@ -242,12 +242,16 @@ export class WalletsService extends Neo4jNodeModelService<AddressDto> {
   }
 
   async searchGraph(id: string, limit = 200, skip = 0) {
+    // const queryResult = await this.neo4jService.run({
+    //   cypher: `MATCH p= (n:Address)-[s:Send] -> (a:Address) WITH p LIMIT ${limit} where n.address="${id}" OR a.address="${id}" return p`,
+    // });
+
     const queryResult = await this.neo4jService.run({
-      cypher: `MATCH p= (f:Address)-[r:Send] -> (t:Address) WITH p 
-        SKIP ${skip} LIMIT ${limit}
+      cypher: `MATCH p= (f:Address)-[r:Send] -> (t:Address)
         WHERE f.address="${id}" OR t.address="${id}"
+        RETURN p
         ORDER BY t.totalValue DESC, t.count DESC, f.totalValue DESC, f.count DESC
-        RETURN p`,
+        SKIP ${skip} LIMIT ${limit}`,
     });
 
     const data = queryResult.records.map((data) => data.toObject());
