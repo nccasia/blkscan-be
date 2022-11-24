@@ -13,6 +13,8 @@ import { ConvertedTransaction } from './entities/convertedTransaction.entity';
 import { TransactionsService } from './services/transactions.service';
 import { Transaction } from './entities/transaction.entity';
 import { TransactionsController } from './controllers/transactions.controller';
+import { Web3Service } from 'src/common/helper/web3.service';
+import { GraphService } from './services/graph.service';
 @Module({
   imports: [
     HttpModule,
@@ -25,7 +27,9 @@ import { TransactionsController } from './controllers/transactions.controller';
     TagsService,
     SendService,
     TransactionsService,
+    Web3Service,
+    GraphService,
   ],
-  exports: [WalletsService, TransactionsService, TagsService],
+  exports: [WalletsService, TransactionsService, TagsService, GraphService],
 })
 export class WalletsModule {}

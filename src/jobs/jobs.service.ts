@@ -4,12 +4,14 @@ import { WalletsService } from 'src/wallets/services/wallets.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TagsService } from 'src/wallets/services/tags.service';
 import { CronJob } from 'cron';
+import { GraphService } from 'src/wallets/services/graph.service';
 
 @Injectable()
 export class JobsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(JobsService.name);
   constructor(
     private readonly walletsService: WalletsService,
+    private readonly graphService: GraphService,
     private readonly tagsService: TagsService,
     private readonly transactionsService: TransactionsService,
   ) {}
@@ -54,7 +56,7 @@ export class JobsService implements OnApplicationBootstrap {
     const convertIds = transactions.map((t) => t.id);
 
     for (const tx of transactions) {
-      await this.walletsService.saveGraph(tx);
+      await this.graphService.saveGraph(tx);
       // await this.walletsService.saveGraph(fromAddress, toAddress, value, 1);
     }
 
